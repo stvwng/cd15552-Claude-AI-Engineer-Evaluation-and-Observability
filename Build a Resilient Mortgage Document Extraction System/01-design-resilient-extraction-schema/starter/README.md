@@ -21,7 +21,7 @@ These modules are provided as scaffolding so you can start on the schema directl
 - `mortgage_extractor/client.py`, the `RecordingClient` cache-and-replay wrapper around the Anthropic SDK. You don't call it in Exercise 1; Exercise 2 wires it into the pipeline.
 - `fixtures/documents/*.txt`, three real-world-shaped mortgage documents.
 - `fixtures/recorded_responses/*.json`, cached Anthropic responses keyed by request hash. The cache pre-loads responses for the final pipeline + final prompts so Exercises 2 through 4 can run offline.
-- `tests/test_us01_schema.py`, the acceptance tests for this exercise (AC-01-01 through AC-01-05).
+- `tests/test_us01_schema.py`, the acceptance tests for this exercise.
 
 ## Setup
 

@@ -18,7 +18,7 @@ Open `mortgage_extractor/prompts.py`. Three TODO regions, then two prompt-assemb
 
 Everything from Exercise 2's solution, plus:
 
-- `tests/test_us03_prompts.py`, acceptance tests for AC-03-01 through AC-03-05. The structural tests (`test_ac_03_01`, `test_ac_03_02`, `test_ac_03_02b`, `test_ac_03_05`) run offline against your prompt strings. The behavioral tests (`test_ac_03_03`, `test_ac_03_04`) run the pipeline against `income_missing_bonus.txt` and `appraisal_informal_sqft.txt` and assert the model returns `None` and `2400` respectively, those pass when the cache is warmed for your prompts' request hashes.
+- `tests/test_us03_prompts.py`, acceptance tests for this exercise. The structural tests (`test_ac_03_01`, `test_ac_03_02`, `test_ac_03_02b`, `test_ac_03_05`) run offline against your prompt strings. The behavioral tests (`test_ac_03_03`, `test_ac_03_04`) run the pipeline against `income_missing_bonus.txt` and `appraisal_informal_sqft.txt` and assert the model returns `None` and `2400` respectively, those pass when the cache is warmed for your prompts' request hashes.
 
 ## Setup
 
@@ -46,5 +46,5 @@ Keep prior tests green too:
 ## Watch for
 
 - **The first rule is verbatim.** Item 1 of `_CATEGORICAL_CRITERIA` is asserted as the exact substring `"Return null for any field not explicitly stated in the document. Do not infer, default, or fabricate."` Copy it character-for-character. This rule does the heavy lifting against fabrication and is the difference between a pipeline underwriting can trust and one they can't.
-- **Reasoning is what makes few-shot examples teach.** Input/output pairs without `<reasoning>` give the model the format but not the rationale. AC-03-02B asserts each example contains a `<reasoning>` block. Write the *why*, for the missing-bonus example, write something like "bonus_ytd is null because the document says no bonus this year; fabricating zero would imply zero earned, not zero reported."
-- **One source of truth for normalization.** `NORMALIZATION_RULES` gets interpolated into every extractor system prompt. Don't write the rules twice. AC-03-05 checks that the *same* `prompts.NORMALIZATION_RULES` constant appears in both the income and appraisal prompts.
+- **Reasoning is what makes few-shot examples teach.** Input/output pairs without `<reasoning>` give the model the format but not the rationale. Each example must contain a `<reasoning>` block. Write the *why*, for the missing-bonus example, write something like "bonus_ytd is null because the document says no bonus this year; fabricating zero would imply zero earned, not zero reported."
+- **One source of truth for normalization.** `NORMALIZATION_RULES` gets interpolated into every extractor system prompt. Don't write the rules twice. The tests check that the *same* `prompts.NORMALIZATION_RULES` constant appears in both the income and appraisal prompts.

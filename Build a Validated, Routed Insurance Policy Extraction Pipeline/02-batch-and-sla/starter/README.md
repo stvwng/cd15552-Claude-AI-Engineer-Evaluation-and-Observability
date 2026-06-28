@@ -28,7 +28,7 @@ and writing the helper that derives submission frequency from an SLA.
 Pre-written for you (read but don't change):
 - `policy_extractor/batch.py` — `AnthropicBatchClient` (the SDK adapter), `BatchClient` Protocol, `BatchItemResult`, `BatchStatus`, `SLATooTightError`, `_build_request`, `_extract_tool_input`, and `dry_run_sample`.
 - All Exercise 1 modules (extractor, validator, retry, etc.) — the per-item retry semantics
-  ride on top of US-01.
+  ride on top of Exercise 1.
 - `tests/test_us02_batch.py` — 12 tests covering correlation by `custom_id`, isolated-failure resubmission, and the SLA math.
 
 ## Install

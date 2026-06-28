@@ -17,7 +17,7 @@ All of Exercise 1's solution, plus:
 - `mortgage_extractor/__main__.py`, the CLI entry point. Provided so you can run `mortgage-extract path/to/doc.txt` and watch your pipeline work end-to-end.
 - `mortgage_extractor/prompts.py`, the production extractor prompt (final version). Exercise 3 will have you rebuild this, you are reading the finished version here only because the cached fixtures in `fixtures/recorded_responses/` were recorded against these prompts, and Exercise 2's tests need offline-deterministic API calls. Treat it as a black box for now.
 - `scripts/regenerate_fixtures.py`, driver to refresh the cache against the live API.
-- `tests/test_us02_pipeline.py`, the acceptance tests for this exercise (AC-02-01 through AC-02-05).
+- `tests/test_us02_pipeline.py`, the acceptance tests for this exercise.
 
 ## Setup
 

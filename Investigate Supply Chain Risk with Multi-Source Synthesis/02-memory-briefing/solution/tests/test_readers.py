@@ -1,4 +1,4 @@
-"""US-01 — provenance-preserving claim model and mixed-source readers."""
+"""Provenance-preserving claim model and mixed-source readers."""
 from __future__ import annotations
 
 from datetime import date
@@ -16,7 +16,7 @@ from supply_chain_risk.readers import (
 )
 
 
-# AC-01-01 — Claim model carries the required provenance/uncertainty fields.
+# Claim model carries the required provenance/uncertainty fields.
 def test_claim_has_required_fields() -> None:
     c = Claim(
         claim="x",
@@ -34,7 +34,7 @@ def test_claim_has_required_fields() -> None:
     assert 0.0 <= c.confidence <= 1.0
 
 
-# AC-01-02 — source_date and confidence are enforced, not optional/free-form.
+# source_date and confidence are enforced, not optional/free-form.
 def test_claim_requires_source_date() -> None:
     with pytest.raises(ValidationError):
         Claim(  # type: ignore[call-arg]
@@ -66,7 +66,7 @@ def test_claim_rejects_unparseable_date() -> None:
         )
 
 
-# AC-01-03 — audit reader: structured JSON -> Claims, carrying report_date.
+# audit reader: structured JSON -> Claims, carrying report_date.
 def test_read_audit(data_dir: Path) -> None:
     result = read_audit(data_dir / "audit.json")
     assert result.ok and result.source == "supplier_audit"
@@ -76,7 +76,7 @@ def test_read_audit(data_dir: Path) -> None:
     assert all(c.source == "supplier_audit" for c in result.claims)
 
 
-# AC-01-04 — logistics reader: semi-structured CSV -> Claims, derived metrics.
+# logistics reader: semi-structured CSV -> Claims, derived metrics.
 def test_read_logistics(data_dir: Path) -> None:
     result = read_logistics(data_dir / "logistics.csv")
     assert result.ok and result.source == "logistics"
@@ -86,7 +86,7 @@ def test_read_logistics(data_dir: Path) -> None:
     assert by_metric["average_lead_time_days"].value == pytest.approx(12.0, abs=0.5)
 
 
-# AC-01-05 — news reader: prose -> Claims via the extractor, dated, sourced.
+# news reader: prose -> Claims via the extractor, dated, sourced.
 def test_read_news_extracts_dated_claims(news_dir: Path, news_extractor) -> None:  # type: ignore[no-untyped-def]
     result = read_news(news_dir / "port_strike.txt", news_extractor)
     assert result.ok and result.source == "industry_news"
@@ -97,7 +97,7 @@ def test_read_news_extracts_dated_claims(news_dir: Path, news_extractor) -> None
     assert c.source_date == date(2026, 3, 17)
 
 
-# AC-01-05 — the live extractor uses the SDK with a structured-output contract.
+# the live extractor uses the SDK with a structured-output contract.
 def test_anthropic_extractor_uses_structured_output() -> None:
     from supply_chain_risk.news_extraction import AnthropicNewsExtractor
 
@@ -129,7 +129,7 @@ def test_anthropic_extractor_uses_structured_output() -> None:
     assert "Meridian Components" in calls["system"]  # type: ignore[operator]
 
 
-# AC-01-06 — empty-but-readable source yields ok=True, claims==[] (not an error).
+# empty-but-readable source yields ok=True, claims==[] (not an error).
 def test_empty_result_is_ok_not_error(news_dir: Path, news_extractor) -> None:  # type: ignore[no-untyped-def]
     result = read_news(news_dir / "unrelated_macro.txt", news_extractor)
     assert result.ok is True
@@ -137,7 +137,7 @@ def test_empty_result_is_ok_not_error(news_dir: Path, news_extractor) -> None:  
     assert result.error is None
 
 
-# AC-01-06 — a missing file is an access failure (ok=False), distinctly.
+# a missing file is an access failure (ok=False), distinctly.
 def test_missing_file_is_access_failure(tmp_path: Path) -> None:
     result = read_audit(tmp_path / "nope.json")
     assert result.ok is False
@@ -145,7 +145,7 @@ def test_missing_file_is_access_failure(tmp_path: Path) -> None:
     assert result.error.failure_type == "file_not_found"
 
 
-# AC-01-07 — ambiguous supplier mention is flagged, not heuristically resolved.
+# ambiguous supplier mention is flagged, not heuristically resolved.
 def test_ambiguous_match_sets_needs_identifier(news_dir: Path, news_extractor) -> None:  # type: ignore[no-untyped-def]
     result = read_news(news_dir / "ambiguous_meridian.txt", news_extractor)
     assert result.ok is True
@@ -156,7 +156,7 @@ def test_ambiguous_match_sets_needs_identifier(news_dir: Path, news_extractor) -
     assert "Meridian Components" in c.candidates
 
 
-# AC-01-03/04 (quality source, supports multi-source corroboration downstream)
+# (quality source, supports multi-source corroboration downstream)
 def test_read_quality(data_dir: Path) -> None:
     result = read_quality(data_dir / "quality.sqlite")
     assert result.ok and result.source == "internal_quality"

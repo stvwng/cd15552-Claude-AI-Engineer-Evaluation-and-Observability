@@ -52,14 +52,14 @@ def mortgage_data_schema() -> JsonSchema:
     # in this docstring. At minimum, satisfy these acceptance criteria from
     # the PRD (also enforced by tests/test_us01_schema.py):
     #
-    #   - AC-01-01: top-level type is "object" with a non-empty properties map.
-    #   - AC-01-02: borrower.full_name, property.address, and loan.amount are
+    #   - top-level type is "object" with a non-empty properties map.
+    #   - borrower.full_name, property.address, and loan.amount are
     #     each required in their sub-object. Optional fields like
     #     borrower.coborrower_name and property.year_built live in
     #     properties but NOT in required.
-    #   - AC-01-03: at least one categorical field uses enum: [..., "other"]
+    #   - at least one categorical field uses enum: [..., "other"]
     #     paired with a sibling *_detail string field.
-    #   - AC-01-04: at least three fields the document frequently omits are
+    #   - at least three fields the document frequently omits are
     #     typed as ["<base>", "null"] — e.g. borrower.coborrower_name,
     #     property.hoa_dues_monthly, income.bonus_ytd.
     #
@@ -79,6 +79,6 @@ def list_nullable_fields(schema: JsonSchema) -> list[str]:
     # TODO: Walk the schema and collect dotted paths of every leaf whose
     # declared type list includes "null". For example, if income.bonus_ytd has
     # type ["number", "null"], emit "income.bonus_ytd". Recurse into nested
-    # object-typed properties. AC-01-05 asserts that every returned path
+    # object-typed properties. Every returned path
     # resolves via cursor = schema["properties"][segment] for each segment.
     raise NotImplementedError("Exercise 1: implement list_nullable_fields()")

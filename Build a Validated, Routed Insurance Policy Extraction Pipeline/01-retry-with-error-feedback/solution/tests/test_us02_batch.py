@@ -1,15 +1,15 @@
-"""Tests for US-02 — Batch processing via Message Batches API.
+"""Tests for batch processing via the Message Batches API.
 
-AC-02-01 — Batch submitter takes N documents and submits one Message Batches request
+Batch submitter takes N documents and submits one Message Batches request
            with each item carrying custom_id = policy_id.
-AC-02-02 — Batch poller returns per-item results keyed by custom_id, distinguishing
+Batch poller returns per-item results keyed by custom_id, distinguishing
            succeeded / errored / expired.
-AC-02-03 — Per-item failures isolated and resubmitted in one follow-up batch.
-AC-02-04 — submission_frequency() returns batches/day; raises SLATooTightError if
+Per-item failures isolated and resubmitted in one follow-up batch.
+submission_frequency() returns batches/day; raises SLATooTightError if
            sla_hours < batch_eta_hours.
-AC-02-05 — Items carry US-01 retry semantics: format/consistency retries on follow-up
+Items carry the standard retry semantics: format/consistency retries on follow-up
            batch with error feedback; missing_source escalates immediately.
-AC-02-06 — `--dry-run-sample N` validates a sample before authorizing bulk batch.
+`--dry-run-sample N` validates a sample before authorizing bulk batch.
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ from policy_extractor.batch import (
 from policy_extractor.records import PolicyExtraction, RetryFutileEscalation
 from tests.conftest import RecordedClient, load_policy_text, make_tool_use_message
 
-# ---------- AC-02-04 — Submission frequency (pure helper, simplest first) ----------
+# ---------- Submission frequency (pure helper, simplest first) ----------
 
 
 def test_ac_02_04_submission_frequency_meets_sla() -> None:
@@ -51,7 +51,7 @@ def test_ac_02_04_submission_frequency_clamps_to_minimum_one_per_day() -> None:
     assert submission_frequency(sla_hours=168.0, batch_eta_hours=6.0) == 1
 
 
-# ---------- AC-02-01 — Batch submitter constructs custom_id per item ----------
+# ---------- Batch submitter constructs custom_id per item ----------
 
 
 def _fake_batch_client(
@@ -88,7 +88,7 @@ def test_ac_02_01_submitter_attaches_custom_id_per_policy() -> None:
         assert any(t["name"] == "extract_policy" for t in params["tools"])
 
 
-# ---------- AC-02-02 — Poller distinguishes succeeded / errored / expired ----------
+# ---------- Poller distinguishes succeeded / errored / expired ----------
 
 
 def test_ac_02_02_poller_returns_results_keyed_by_custom_id() -> None:
@@ -115,7 +115,7 @@ def test_ac_02_02_poller_returns_results_keyed_by_custom_id() -> None:
     assert set(out.keys()) == {"POL-2025-001", "POL-2025-002", "POL-2025-003"}
 
 
-# ---------- AC-02-03 — Resubmission of errored/expired items ----------
+# ---------- Resubmission of errored/expired items ----------
 
 
 def test_ac_02_03_errored_items_resubmitted_in_one_followup_batch() -> None:
@@ -172,7 +172,7 @@ def test_ac_02_03_persistent_errors_after_resubmission_are_returned_as_escalatio
     assert result.detected_pattern.startswith("batch_item_")
 
 
-# ---------- AC-02-05 — Validation-driven retry between batches ----------
+# ---------- Validation-driven retry between batches ----------
 
 
 def test_ac_02_05_format_failure_triggers_resubmission_with_error_feedback() -> None:
@@ -222,7 +222,7 @@ def test_ac_02_05_missing_source_escalates_immediately_no_resubmission() -> None
     assert result.detected_pattern == "endorsements_absent"
 
 
-# ---------- AC-02-06 — Dry-run sample ----------
+# ---------- Dry-run sample ----------
 
 
 def test_ac_02_06_dry_run_sample_returns_success_rate_and_pattern_summary() -> None:

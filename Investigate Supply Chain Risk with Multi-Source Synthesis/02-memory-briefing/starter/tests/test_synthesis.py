@@ -1,4 +1,4 @@
-"""US-03 — conflict annotation and coverage-tagged synthesis briefing."""
+"""Conflict annotation and coverage-tagged synthesis briefing."""
 from __future__ import annotations
 
 from datetime import date
@@ -25,7 +25,7 @@ def _claim(metric_id: str, text: str, source: str, value: float | None = None,
     )
 
 
-# AC-03-01 — group_by_metric merges near-duplicate metric ids via shared memory.
+# group_by_metric merges near-duplicate metric ids via shared memory.
 def test_group_merges_near_duplicate_metrics() -> None:
     c1 = _claim("defect_rate_ppm", "Defect rate measured 190 ppm in incoming QC.",
                 "internal_quality", 190.0)
@@ -46,7 +46,7 @@ def test_group_keeps_distinct_metrics_separate(all_claims, seeded_memory) -> Non
     assert "port_disruption" in groups and "supplier_financial_distress" in groups
 
 
-# AC-03-02 — classification: agree -> Well-Established, disagree -> Contested,
+# classification: agree -> Well-Established, disagree -> Contested,
 # tracked-but-absent -> Incomplete.
 def test_classification(all_claims, seeded_memory) -> None:  # type: ignore[no-untyped-def]
     b = build_briefing("Meridian Components", all_claims, seeded_memory)
@@ -57,7 +57,7 @@ def test_classification(all_claims, seeded_memory) -> None:  # type: ignore[no-u
     assert cls["production_capacity_utilization"] == INCOMPLETE  # tracked, no source
 
 
-# AC-03-03 — Contested preserves every value with source+date; no arbitration.
+# Contested preserves every value with source+date; no arbitration.
 def test_contested_preserves_both_values(all_claims, seeded_memory) -> None:  # type: ignore[no-untyped-def]
     b = build_briefing("Meridian Components", all_claims, seeded_memory)
     out = b.render()
@@ -71,7 +71,7 @@ def test_contested_preserves_both_values(all_claims, seeded_memory) -> None:  # 
     assert "86.5" not in out
 
 
-# AC-03-04 — content-appropriate rendering: table / prose / structured list.
+# content-appropriate rendering: table / prose / structured list.
 def test_content_appropriate_rendering(all_claims, seeded_memory) -> None:  # type: ignore[no-untyped-def]
     out = build_briefing("Meridian Components", all_claims, seeded_memory).render()
     assert "| Metric | Value | As of | Source |" in out          # logistics as table
@@ -79,7 +79,7 @@ def test_content_appropriate_rendering(all_claims, seeded_memory) -> None:  # ty
     assert "- Reported values by source:" in out                 # comparison as list
 
 
-# AC-03-05 — escalation by explicit criteria, independent of confidence/sentiment.
+# escalation by explicit criteria, independent of confidence/sentiment.
 def test_escalation_criteria(all_claims, seeded_memory) -> None:  # type: ignore[no-untyped-def]
     b = build_briefing("Meridian Components", all_claims, seeded_memory)
     escalated = {f.metric_id for f in b.escalations}
@@ -103,7 +103,7 @@ def test_escalation_ignores_confidence_directly() -> None:
     assert b.section(WELL_ESTABLISHED)[0].escalate is False
 
 
-# AC-03-06 — exactly three sections, each populated or explicit none, with attribution.
+# exactly three sections, each populated or explicit none, with attribution.
 def test_three_sections_with_attribution(all_claims, seeded_memory) -> None:  # type: ignore[no-untyped-def]
     b = build_briefing("Meridian Components", all_claims, seeded_memory)
     out = b.render()
@@ -124,7 +124,7 @@ def test_empty_section_renders_none() -> None:
     assert "## Incomplete\n_none_" in out
 
 
-# AC-03-07 — per-finding coverage badges describe support level.
+# per-finding coverage badges describe support level.
 def test_coverage_badges(all_claims, seeded_memory) -> None:  # type: ignore[no-untyped-def]
     out = build_briefing("Meridian Components", all_claims, seeded_memory).render()
     assert "corroborated across 2 sources" in out   # defect_rate / lead_time

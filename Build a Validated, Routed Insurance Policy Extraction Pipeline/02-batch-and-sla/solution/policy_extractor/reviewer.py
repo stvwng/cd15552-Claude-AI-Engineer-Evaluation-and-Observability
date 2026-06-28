@@ -5,7 +5,7 @@ Two separate concerns share this module because both are "second-pass" QA steps:
      per-field agree/disagree + review_confidence.
   2. integration_pass() — pure cross-field consistency checks within one extraction.
 
-The output of both feeds the routing layer (US-04).
+The output of both feeds the routing layer.
 """
 from __future__ import annotations
 

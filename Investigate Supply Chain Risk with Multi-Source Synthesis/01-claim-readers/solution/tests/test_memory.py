@@ -1,4 +1,4 @@
-"""US-02 — shared-memory vector store with cross-source semantic retrieval."""
+"""Shared-memory vector store with cross-source semantic retrieval."""
 from __future__ import annotations
 
 from datetime import date
@@ -7,13 +7,13 @@ from supply_chain_risk.memory import SharedMemory
 from supply_chain_risk.models import Claim
 
 
-# AC-02-01 — SharedMemory wraps Chroma with a local embedding function (offline).
+# SharedMemory wraps Chroma with a local embedding function (offline).
 def test_shared_memory_constructs_offline() -> None:
     mem = SharedMemory()
     assert mem.count() == 0
 
 
-# AC-02-02 — add_claims stores provenance metadata that round-trips intact.
+# add_claims stores provenance metadata that round-trips intact.
 def test_provenance_round_trips(seeded_memory) -> None:  # type: ignore[no-untyped-def]
     hits = seeded_memory.search("on-time delivery performance", k=5)
     assert hits
@@ -25,7 +25,7 @@ def test_provenance_round_trips(seeded_memory) -> None:  # type: ignore[no-untyp
                for c in audit_ot)
 
 
-# AC-02-03 — semantic search surfaces cross-source related claims ahead of noise.
+# semantic search surfaces cross-source related claims ahead of noise.
 def test_search_retrieves_cross_source_corroborating_claims(seeded_memory) -> None:  # type: ignore[no-untyped-def]
     hits = seeded_memory.search("on-time delivery rate for the supplier", k=4)
     sources = {c.source for c in hits if c.metric_id == "on_time_delivery_rate"}
@@ -36,7 +36,7 @@ def test_search_retrieves_cross_source_corroborating_claims(seeded_memory) -> No
     assert "supplier_financial_distress" not in top2_metrics
 
 
-# AC-02-04 — related_to finds similar claims across sources, excluding itself.
+# related_to finds similar claims across sources, excluding itself.
 def test_related_to_excludes_self_and_finds_cross_source(seeded_memory) -> None:  # type: ignore[no-untyped-def]
     audit_ot = Claim(
         claim="During Q1 2026, Meridian Components achieved an on-time delivery rate "
@@ -58,7 +58,7 @@ def test_related_to_excludes_self_and_finds_cross_source(seeded_memory) -> None:
                for c in related)
 
 
-# AC-02-05 — deterministic: same query yields the same ordering across instances.
+# deterministic: same query yields the same ordering across instances.
 def test_deterministic_results() -> None:
     from tests.conftest import load_all_claims
 

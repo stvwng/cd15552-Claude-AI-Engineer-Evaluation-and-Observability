@@ -208,7 +208,7 @@ def process_with_resubmission(
 
     Returns a dict mapping policy_id → PolicyExtraction or RetryFutileEscalation.
 
-    Per AC-02-05: because the Batch API does not support multi-turn tool conversations
+    because the Batch API does not support multi-turn tool conversations
     within a single batch request, format/consistency retries happen on a follow-up
     batch and missing_source escalates immediately.
     """
@@ -282,7 +282,7 @@ def dry_run_sample(
 ) -> DryRunSampleResult:
     """Run sample_size policies through the real-time extractor and report stats.
 
-    Used as an AC-02-06 guard: before authorising a bulk batch, the operator runs a
+    Used as a pre-batch guard: before authorising a bulk batch, the operator runs a
     small sample real-time and sees the first-pass success rate plus a pattern
     summary of recurring failures.
     """

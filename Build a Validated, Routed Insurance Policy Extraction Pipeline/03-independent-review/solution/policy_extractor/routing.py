@@ -63,7 +63,7 @@ def route_extraction(
     # — "auto_approve when all extractor confidences are high" — silently ignores
     # reviewer disagreement and integration failures. A hallucinated all-0.99
     # extraction with a reviewer disagreement would then sail through. The
-    # AC-04-06 test (extractor self-rates 0.99, reviewer disagrees on one field,
+    # The regression test here (extractor self-rates 0.99, reviewer disagrees on one field,
     # expect human_review) is what catches the shortcut.
     #
     # Build a human-readable `reason` string that lists which of the three triggered:

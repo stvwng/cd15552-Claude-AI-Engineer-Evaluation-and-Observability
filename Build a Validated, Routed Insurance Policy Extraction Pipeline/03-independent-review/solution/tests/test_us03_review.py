@@ -1,11 +1,11 @@
-"""Tests for US-03 — Independent review + within-policy integration pass.
+"""Tests for independent review + within-policy integration pass.
 
-AC-03-01 — Reviewer is a separate API call with a fresh prompt; no extractor history.
-AC-03-02 — Reviewer returns per-field {agreement, reason?, review_confidence}.
-AC-03-03 — Any disagreement flags review_disagreement (routed to human resolution).
-AC-03-04 — Reviewer prompt contains only source + extracted JSON; no extractor tokens.
-AC-03-05 — Reviewer uses claude-sonnet-4-6; extractor uses claude-haiku-4-5.
-AC-03-06 — Integration pass runs cross-field checks: coverage_limit vs endorsements,
+Reviewer is a separate API call with a fresh prompt; no extractor history.
+Reviewer returns per-field {agreement, reason?, review_confidence}.
+Any disagreement flags review_disagreement (routed to human resolution).
+Reviewer prompt contains only source + extracted JSON; no extractor tokens.
+Reviewer uses claude-sonnet-4-6; extractor uses claude-haiku-4-5.
+Integration pass runs cross-field checks: coverage_limit vs endorsements,
            endorsements vs exclusions non-contradiction, premium vs components.
 """
 from __future__ import annotations
@@ -27,7 +27,7 @@ from policy_extractor.reviewer import (
 )
 from tests.conftest import RecordedClient, load_policy_text, make_tool_use_message
 
-# ---------- AC-03-01 / AC-03-04 — Independence + clean prompt ----------
+# ---------- Independence + clean prompt ----------
 
 
 def _extraction_dict() -> dict[str, object]:
@@ -79,7 +79,7 @@ def test_ac_03_04_reviewer_prompt_has_no_extractor_artefacts() -> None:
         assert phrase not in combined, f"reviewer prompt leaks: {phrase!r}"
 
 
-# ---------- AC-03-02 — Per-field review output ----------
+# ---------- Per-field review output ----------
 
 
 def _review_tool_input(field_reviews: list[dict[str, object]]) -> dict[str, object]:
@@ -113,7 +113,7 @@ def test_ac_03_02_reviewer_returns_per_field_agreement_with_review_confidence() 
     assert "review_confidence" in result.agreements["premium_amount"].__dict__
 
 
-# ---------- AC-03-03 — Disagreement triggers review_disagreement ----------
+# ---------- Disagreement triggers review_disagreement ----------
 
 
 def test_ac_03_03_any_disagreement_flags_review_disagreement() -> None:
@@ -146,7 +146,7 @@ def test_ac_03_03_any_disagreement_flags_review_disagreement() -> None:
     assert disagreeing == ["premium_amount"]
 
 
-# ---------- AC-03-05 — Model split ----------
+# ---------- Model split ----------
 
 
 def test_ac_03_05_extractor_and_reviewer_use_different_models() -> None:
@@ -178,7 +178,7 @@ def test_ac_03_05_independent_review_uses_reviewer_model_by_default() -> None:
     assert client.calls[0]["model"] == DEFAULT_REVIEWER_MODEL
 
 
-# ---------- AC-03-06 — Integration pass ----------
+# ---------- Integration pass ----------
 
 
 def _ok_extraction(**overrides: object) -> PolicyExtraction:

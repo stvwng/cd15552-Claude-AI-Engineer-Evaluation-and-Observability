@@ -1,6 +1,6 @@
 """CLI entry point for the policy-extractor pipeline.
 
-At this stage only the `extract` subcommand (US-01) is wired up. Later exercises
+At this stage only the `extract` subcommand is wired up. Later exercises
 will add `batch` and `pipeline`.
 """
 from __future__ import annotations

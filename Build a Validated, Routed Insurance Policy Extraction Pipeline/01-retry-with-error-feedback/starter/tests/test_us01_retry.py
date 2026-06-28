@@ -1,11 +1,11 @@
-"""Tests for US-01 — retry-with-error-feedback extraction.
+"""Tests for retry-with-error-feedback extraction.
 
-AC-01-01 — Extractor produces structured policy record via tool_choice-forced tool call.
-AC-01-02 — Validator returns ValidationError with category + detected_pattern.
-AC-01-03 — Format/consistency failures retry up to 3 with error appended to prompt.
-AC-01-04 — Missing_source failures halt immediately, no further API call.
-AC-01-05 — Success record carries retry_count, final_attempt_index, validation_history.
-AC-01-06 — Run-level summarize_patterns aggregator produces frequency table.
+Extractor produces structured policy record via tool_choice-forced tool call.
+Validator returns ValidationError with category + detected_pattern.
+Format/consistency failures retry up to 3 with error appended to prompt.
+Missing_source failures halt immediately, no further API call.
+Success record carries retry_count, final_attempt_index, validation_history.
+Run-level summarize_patterns aggregator produces frequency table.
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from policy_extractor.summary import summarize_patterns
 from policy_extractor.validator import validate_extraction
 from tests.conftest import RecordedClient, load_policy_text, make_tool_use_message
 
-# ---------- AC-01-01 — Extractor structure ----------
+# ---------- Extractor structure ----------
 
 
 def test_ac_01_01_extract_tool_has_required_fields() -> None:
@@ -87,7 +87,7 @@ def test_ac_01_01_extractor_parses_well_formed_response() -> None:
     assert result.premium_amount == 1847.62
 
 
-# ---------- AC-01-02 — Validator ----------
+# ---------- Validator ----------
 
 
 def test_ac_01_02_validator_flags_negative_premium_as_format() -> None:
@@ -196,7 +196,7 @@ def test_ac_01_02_validator_accepts_well_formed() -> None:
     assert err is None
 
 
-# ---------- AC-01-03 — Format retry appends error ----------
+# ---------- Format retry appends error ----------
 
 
 def test_ac_01_03_format_failure_retries_with_error_appended() -> None:
@@ -249,7 +249,7 @@ def test_ac_01_03_format_failure_retries_with_error_appended() -> None:
     assert result.premium_amount == 1500.0
 
     # Second prompt must contain the validation error message and the prior
-    # offending value, per AC-01-03.
+    # offending value.
     assert client.call_count == 2
     second_call_messages = client.calls[1]["messages"]
     retry_text = " ".join(_flatten_messages(second_call_messages))
@@ -323,7 +323,7 @@ def test_ac_01_03_consistency_failure_also_retries() -> None:
     assert client.call_count == 2
 
 
-# ---------- AC-01-04 — Missing source halts immediately ----------
+# ---------- Missing source halts immediately ----------
 
 
 def test_ac_01_04_missing_source_halts_immediately() -> None:
@@ -360,7 +360,7 @@ def test_ac_01_04_missing_source_halts_immediately() -> None:
     assert client.call_count == 1  # no further API call
 
 
-# ---------- AC-01-05 — Success record carries metadata ----------
+# ---------- Success record carries metadata ----------
 
 
 def test_ac_01_05_success_metadata_after_retry() -> None:
@@ -416,7 +416,7 @@ def test_ac_01_05_success_metadata_after_retry() -> None:
     assert result.validation_history[0].detected_pattern == "negative_premium"
 
 
-# ---------- AC-01-06 — Pattern aggregator ----------
+# ---------- Pattern aggregator ----------
 
 
 def test_ac_01_06_pattern_summary_counts_across_runs() -> None:

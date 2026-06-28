@@ -1,4 +1,4 @@
-"""US-04 — structured error propagation with partial results, via the coordinator."""
+"""Structured error propagation with partial results, via the coordinator."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,7 +8,7 @@ from supply_chain_risk.readers import read_logistics
 from supply_chain_risk.synthesis import INCOMPLETE
 
 
-# AC-04-01 / AC-04-02 — a simulated timeout returns ok=False with FailureContext
+# a simulated timeout returns ok=False with FailureContext
 # AND partial results, without raising.
 def test_logistics_timeout_returns_partial_and_context(data_dir: Path) -> None:
     result = read_logistics(data_dir / "logistics.csv", fail_after=10)
@@ -22,7 +22,7 @@ def test_logistics_timeout_returns_partial_and_context(data_dir: Path) -> None:
     assert all(c.source == "logistics" for c in err.partial_results)
 
 
-# AC-04-03 / AC-04-05 — coordinator proceeds; failed source's exclusive metric is
+# coordinator proceeds; failed source's exclusive metric is
 # Incomplete with failure context; briefing names the unavailable source.
 def test_coordinator_proceeds_and_annotates_gap(data_dir, news_extractor) -> None:  # type: ignore[no-untyped-def]
     result = investigate(
@@ -41,7 +41,7 @@ def test_coordinator_proceeds_and_annotates_gap(data_dir, news_extractor) -> Non
     assert "Sources unavailable" in out and "logistics" in out
 
 
-# AC-04-04 — access failure (ok=False, error) vs valid empty result (ok=True, []).
+# access failure (ok=False, error) vs valid empty result (ok=True, []).
 def test_access_failure_distinct_from_empty_result(data_dir, news_extractor, tmp_path) -> None:  # type: ignore[no-untyped-def]
     # access failure: file missing
     missing = read_logistics(tmp_path / "nope.csv")
@@ -54,7 +54,7 @@ def test_access_failure_distinct_from_empty_result(data_dir, news_extractor, tmp
     assert empty.ok is True and empty.claims == [] and empty.error is None
 
 
-# AC-04-05 — a single source failure never aborts the whole investigation.
+# a single source failure never aborts the whole investigation.
 def test_single_failure_does_not_abort(data_dir, news_extractor) -> None:  # type: ignore[no-untyped-def]
     result = investigate(
         "Meridian Components", data_dir, news_extractor, simulate_logistics_timeout=True
@@ -68,7 +68,7 @@ def test_single_failure_does_not_abort(data_dir, news_extractor) -> None:  # typ
     assert any(r.ok for r in result.reader_results)
 
 
-# AC-04-06 — only successful claims are vectorized; the failure's partial results
+# only successful claims are vectorized; the failure's partial results
 # (and the contested logistics value) are not silently added to shared memory.
 def test_only_successful_claims_vectorized(data_dir, news_extractor) -> None:  # type: ignore[no-untyped-def]
     from supply_chain_risk.memory import SharedMemory

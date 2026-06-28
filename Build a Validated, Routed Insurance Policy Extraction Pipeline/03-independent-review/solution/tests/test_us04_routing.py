@@ -1,15 +1,15 @@
-"""Tests for US-04 — Confidence-based HITL routing with stratified sampling.
+"""Tests for confidence-based HITL routing with stratified sampling.
 
-AC-04-01 — Each extracted field carries a confidence in [0.0, 1.0] (covered in US-01).
-AC-04-02 — Routing function classifies as auto_approve | human_review | spot_check.
+Each extracted field carries a confidence in [0.0, 1.0].
+Routing function classifies as auto_approve | human_review | spot_check.
             human_review fires on (field conf < 0.90) OR (any reviewer disagreement)
             OR (any integration check failure).
-AC-04-03 — Stratified sampler groups by policy_type, draws configurable % per stratum,
+Stratified sampler groups by policy_type, draws configurable % per stratum,
             never silently drops strata with eligible records.
-AC-04-04 — Sliced calibration report: policy_type x field with (samples, mean_pred_conf,
+Sliced calibration report: policy_type x field with (samples, mean_pred_conf,
             observed_accuracy, Brier_score) + overall Brier.
-AC-04-05 — Routing decisions written to a single JSON file with per-policy records.
-AC-04-06 — Routing is deterministic on (confidence ∧ reviewer ∧ integration);
+Routing decisions written to a single JSON file with per-policy records.
+Routing is deterministic on (confidence ∧ reviewer ∧ integration);
             high-confidence + reviewer disagreement => human_review, not auto_approve.
 """
 from __future__ import annotations
@@ -94,7 +94,7 @@ def _all_agree() -> list[FieldAgreement]:
     )]
 
 
-# ---------- AC-04-02 — Routing classifier ----------
+# ---------- Routing classifier ----------
 
 
 def test_ac_04_02_all_clear_routes_to_auto_approve() -> None:
@@ -144,13 +144,13 @@ def test_ac_04_02_integration_failure_routes_to_human_review() -> None:
     assert "premium_matches_components_sum" in decision.integration_failures
 
 
-# ---------- AC-04-06 — Routing determinism / safety nets ----------
+# ---------- Routing determinism / safety nets ----------
 
 
 def test_ac_04_06_high_confidence_plus_reviewer_disagreement_still_routes_to_human_review() -> None:
     """All-0.99 extractor confidence cannot override a reviewer disagreement.
 
-    Per AC-04-06: routing is deterministic on (confidence ∧ reviewer ∧ integration).
+    routing is deterministic on (confidence ∧ reviewer ∧ integration).
     The model's self-rated confidence is not the sole gate.
     """
     high_conf = {
@@ -171,7 +171,7 @@ def test_ac_04_06_high_confidence_plus_reviewer_disagreement_still_routes_to_hum
     assert decision.fields_below_threshold == []
 
 
-# ---------- AC-04-03 — Stratified sampler ----------
+# ---------- Stratified sampler ----------
 
 
 def test_ac_04_03_stratified_sampler_picks_from_every_stratum_with_eligible_records() -> None:
@@ -232,7 +232,7 @@ def test_ac_04_03_only_auto_approve_decisions_are_eligible_for_spot_check() -> N
             assert d.decision == "human_review"
 
 
-# ---------- AC-04-04 — Sliced calibration report ----------
+# ---------- Sliced calibration report ----------
 
 
 def test_ac_04_04_calibration_report_is_sliced_by_policy_type_and_field() -> None:
@@ -285,7 +285,7 @@ def test_ac_04_04_calibration_report_handles_empty_input() -> None:
     assert report.overall_brier == 0.0
 
 
-# ---------- AC-04-05 — JSON output file ----------
+# ---------- JSON output file ----------
 
 
 def test_ac_04_05_routing_decisions_written_to_json_file(tmp_path: Path) -> None:
@@ -317,7 +317,7 @@ def test_ac_04_05_routing_decisions_written_to_json_file(tmp_path: Path) -> None
     record_b = next(r for r in parsed if r["policy_id"] == "POL-B")
     assert record_b["decision"] == "human_review"
     assert "premium_amount" in record_b["fields_below_threshold"]
-    # Required keys per AC-04-05
+    # Required keys
     for required in (
         "policy_id", "decision", "reason", "fields_below_threshold",
         "reviewer_disagreements", "integration_failures", "confidence_summary",

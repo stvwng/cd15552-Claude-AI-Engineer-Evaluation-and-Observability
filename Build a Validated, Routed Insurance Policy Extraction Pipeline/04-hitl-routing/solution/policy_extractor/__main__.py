@@ -1,7 +1,7 @@
 """CLI entry point for the policy-extractor pipeline.
 
-Subcommands mirror the four user stories: extract (US-01), batch (US-02),
-review (US-03), route (US-04), pipeline (end-to-end).
+Subcommands: extract, batch,
+review, route, pipeline (end-to-end).
 """
 from __future__ import annotations
 

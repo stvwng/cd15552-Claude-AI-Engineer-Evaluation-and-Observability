@@ -140,7 +140,7 @@ def extractor_system_prompt(doc_type: DocumentType) -> str:
 def income_verification_system_prompt() -> str:
     """Return the income-verification extractor system prompt.
 
-    This is the canonical prompt for US-03: it contains the verbatim null-
+    This is the canonical extractor prompt: it contains the verbatim null-
     handling criterion as item #1, four numbered categorical criteria, the
     shared :data:`NORMALIZATION_RULES`, and four contrastive few-shot examples
     each with an inline ``<reasoning>`` block.

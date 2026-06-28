@@ -17,7 +17,7 @@ This starter carries forward Exercise 3's full solution byte-for-byte, with one 
 
 Everything from Exercise 3's solution, plus:
 
-- `tests/test_us04_validator.py`, acceptance tests for AC-04-01 through AC-04-04 plus a JSON round-trip test. All offline-deterministic except `test_ac_04_04_real_paystub_with_sum_mismatch_is_flagged`, which runs the pipeline against `income_sum_mismatch.txt` (cached response shipped).
+- `tests/test_us04_validator.py`, acceptance tests plus a JSON round-trip test. All offline-deterministic except `test_ac_04_04_real_paystub_with_sum_mismatch_is_flagged`, which runs the pipeline against `income_sum_mismatch.txt` (cached response shipped).
 
 ## Setup
 

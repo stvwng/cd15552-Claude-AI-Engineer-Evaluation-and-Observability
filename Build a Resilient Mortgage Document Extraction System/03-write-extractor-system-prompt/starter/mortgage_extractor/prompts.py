@@ -29,7 +29,7 @@ NORMALIZATION_RULES = ""  # TODO: replace with the rule text
 #
 #     1. Return null for any field not explicitly stated in the document. Do not infer, default, or fabricate.
 #
-# (AC-03-01 asserts this exact substring appears and is item 1.) The remaining
+# (This exact substring must appear as item 1.) The remaining
 # items should distinguish base income from bonus, commission, and overtime;
 # tell the model to emit "other" + *_detail when an enum doesn't fit; and
 # remind the model that numeric fields receive numbers, not strings.
@@ -51,13 +51,13 @@ _CATEGORICAL_CRITERIA = ""  # TODO: replace with the numbered criteria block
 #     </output>
 #     </example>
 #
-# AC-03-02 requires four examples whose names contain (in some order):
+# Four examples are required, whose names contain (in some order):
 #   - "clean"     — a fully-populated paystub where every component is stated
 #   - "missing"   — a paystub that does not mention bonus; bonus_monthly is null
 #   - "informal"  — an appraisal saying "about 2,400 sq ft"; sqft is 2400 (int)
 #   - "mismatch"  — a paystub whose stated total doesn't equal the line-item sum
 #
-# AC-03-02B requires each example to contain an inline <reasoning>...</reasoning>
+# Each example must contain an inline <reasoning>...</reasoning>
 # block explaining the choice — for instance, for "missing":
 # "bonus_ytd is null because the document says no bonus this year — fabricating
 # a zero would imply zero earned, not zero reported."
@@ -104,7 +104,7 @@ def extractor_system_prompt(doc_type: DocumentType) -> str:
 def income_verification_system_prompt() -> str:
     """Return the income-verification extractor system prompt.
 
-    This is the canonical prompt for US-03: it contains the verbatim null-
+    This is the canonical extractor prompt: it contains the verbatim null-
     handling criterion as item #1, four numbered categorical criteria, the
     shared :data:`NORMALIZATION_RULES`, and four contrastive few-shot examples
     each with an inline ``<reasoning>`` block.

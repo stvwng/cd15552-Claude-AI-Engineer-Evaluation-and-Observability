@@ -1,4 +1,4 @@
-"""Tests for US-02: two-pass tool_choice pipeline."""
+"""Tests for the two-pass tool_choice pipeline."""
 from __future__ import annotations
 
 import pytest

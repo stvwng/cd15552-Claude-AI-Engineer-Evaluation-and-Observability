@@ -10,7 +10,7 @@ Everything from Exercise 1, plus:
 - `mortgage_extractor/__main__.py`, the CLI entry point.
 - `mortgage_extractor/prompts.py`, the production prompts (final version). You will rebuild this in Exercise 3; it ships final here so the cached responses replay deterministically against Exercise 2's tests.
 - `scripts/regenerate_fixtures.py`, refreshes `fixtures/recorded_responses/*.json` against the live API.
-- `tests/test_us02_pipeline.py`, acceptance tests for AC-02-01 through AC-02-05.
+- `tests/test_us02_pipeline.py`, acceptance tests for this exercise.
 
 ## What's not here yet
 

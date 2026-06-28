@@ -7,7 +7,7 @@ This folder is the project state after Exercise 3: the production extractor prom
 Everything from Exercise 2, plus:
 
 - `mortgage_extractor/prompts.py`, `NORMALIZATION_RULES`, `_CATEGORICAL_CRITERIA` (verbatim first rule), four contrastive `<example>` blocks with `<reasoning>`, and the prompt-assembly functions.
-- `tests/test_us03_prompts.py`, acceptance tests for AC-03-01 through AC-03-05.
+- `tests/test_us03_prompts.py`, acceptance tests for this exercise.
 
 ## What's not here yet
 

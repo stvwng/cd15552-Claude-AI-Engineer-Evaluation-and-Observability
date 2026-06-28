@@ -1,4 +1,4 @@
-"""Tests for US-01: resilient extraction schema."""
+"""Tests for the resilient extraction schema."""
 from __future__ import annotations
 
 from mortgage_extractor import schema, tools

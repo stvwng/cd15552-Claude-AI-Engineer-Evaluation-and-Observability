@@ -1,4 +1,4 @@
-"""Tests for US-04: mathematical-consistency validator."""
+"""Tests for the mathematical-consistency validator."""
 from __future__ import annotations
 
 from pathlib import Path

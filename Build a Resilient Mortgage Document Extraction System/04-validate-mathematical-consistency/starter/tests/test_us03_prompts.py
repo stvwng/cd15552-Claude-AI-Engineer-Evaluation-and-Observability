@@ -1,4 +1,4 @@
-"""Tests for US-03: few-shot prompts, explicit criteria, normalization."""
+"""Tests for few-shot prompts, explicit criteria, normalization."""
 from __future__ import annotations
 
 import re

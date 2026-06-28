@@ -20,7 +20,7 @@ Target: 36 passed, 3 skipped.
 
 ## What changed since `03-independent-review/starter/`
 
-- `policy_extractor/reviewer.py` — five learner-write functions now implemented.
+- `policy_extractor/reviewer.py` — five functions now implemented.
 
 ## What's pre-positioned for the next exercise
 
