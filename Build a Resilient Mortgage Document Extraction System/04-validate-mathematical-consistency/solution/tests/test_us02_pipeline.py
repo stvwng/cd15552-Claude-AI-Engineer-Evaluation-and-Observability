@@ -96,7 +96,7 @@ def test_ac_02_04_extract_directly_with_other_raises() -> None:
 
 def test_ac_02_05_default_model_is_haiku_and_overridable() -> None:
     default = Pipeline(client=RecordingClient(mode="replay"))
-    assert default.model == "claude-haiku-4-5"
+    assert default.model == "claude-haiku-4-5-20251001"
 
     overridden = Pipeline(
         client=RecordingClient(mode="replay"),

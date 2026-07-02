@@ -35,7 +35,7 @@ from policy_extractor.retry import build_extraction, extract_with_retry
 from policy_extractor.summary import summarize_patterns
 from policy_extractor.validator import validate_extraction
 
-DEFAULT_EXTRACTOR_MODEL = "claude-haiku-4-5"
+DEFAULT_EXTRACTOR_MODEL = "claude-haiku-4-5-20251001"
 BATCH_POLL_INTERVAL_SECONDS = 5.0
 BATCH_POLL_TIMEOUT_SECONDS = 86_400.0  # 24h SDK contract
 
@@ -160,15 +160,17 @@ def submission_frequency(*, sla_hours: float, batch_eta_hours: float) -> int:
     # 1. If sla_hours < batch_eta_hours → raise SLATooTightError. The batch's own
     #    completion time blows the SLA before the result is even available; the
     #    caller should fall back to the real-time Messages API.
-    # 2. Compute head_room = sla_hours - batch_eta_hours.
-    #    ⚠ Watch the denominator. When sla_hours ≈ batch_eta_hours, head_room is
-    #    near zero and dividing 24 by `sla_hours` (the most natural-looking
-    #    denominator) silently produces a too-loose frequency. The right formula
-    #    keeps head_room and batch_eta_hours separate:
-    #       24 / (head_room + batch_eta_hours)
-    #    At the boundary (head_room == 0) this collapses to 24 / batch_eta_hours,
-    #    which is the correct fallback — every batch is a full SLA period long.
-    # 3. Return max(1, math.ceil(24.0 / (head_room + batch_eta_hours))).
+    # 2. Compute head_room = sla_hours - batch_eta_hours. This is the longest a
+    #    request can wait before it must be submitted and still finish in time.
+    #    Worst case, a request arrives just after a batch goes out, waits for the
+    #    next submission, then waits batch_eta_hours for that batch to finish. To
+    #    keep that total under the SLA, the gap between submissions must be at
+    #    most head_room, so submit ceil(24 / head_room) times a day. Dividing by
+    #    sla_hours instead ignores the batch turnaround and submits too rarely.
+    # 3. If head_room == 0 (sla_hours == batch_eta_hours), you cannot divide by
+    #    zero. Fall back to one submission per batch cycle:
+    #    max(1, math.ceil(24.0 / batch_eta_hours)).
+    # 4. Otherwise return max(1, math.ceil(24.0 / head_room)).
     raise NotImplementedError("LO-B — implement submission_frequency.")
 
 

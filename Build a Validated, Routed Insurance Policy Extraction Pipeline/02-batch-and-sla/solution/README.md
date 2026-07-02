@@ -7,7 +7,7 @@ explicit guard raises `SLATooTightError` when batching cannot meet the SLA.
 
 This directory ALSO contains the scaffold for Exercise 3 (`reviewer.py` +
 `tests/test_us03_review.py`) — so this is byte-identical to
-`exercises/03-independent-review/starter/`.
+`03-independent-review/starter/`.
 
 ## Verify
 

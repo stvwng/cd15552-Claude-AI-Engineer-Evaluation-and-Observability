@@ -32,11 +32,12 @@ from tests.conftest import RecordedClient, load_policy_text, make_tool_use_messa
 
 
 def test_ac_02_04_submission_frequency_meets_sla() -> None:
-    # SLA 24h, batch ETA 6h: 1 batch is enough (within 24h of submission)
-    assert submission_frequency(sla_hours=24.0, batch_eta_hours=6.0) == 1
-    # SLA 12h, batch ETA 6h: 1 batch per 6h, so 4 per day (24/6) but only
-    # 24/12=2 needed for SLA — return the lower frequency that still meets SLA
-    assert submission_frequency(sla_hours=12.0, batch_eta_hours=6.0) == 2
+    # SLA 24h, batch ETA 6h: head_room = 18h. Worst case, a request arrives
+    # just after a batch goes out and waits until the next one, then waits the
+    # 6h batch ETA. To keep that total under 24h, submit ceil(24 / 18) = 2/day.
+    assert submission_frequency(sla_hours=24.0, batch_eta_hours=6.0) == 2
+    # SLA 12h, batch ETA 6h: head_room = 6h, so submit ceil(24 / 6) = 4/day.
+    assert submission_frequency(sla_hours=12.0, batch_eta_hours=6.0) == 4
 
 
 def test_ac_02_04_submission_frequency_raises_when_sla_below_batch_eta() -> None:
@@ -84,7 +85,7 @@ def test_ac_02_01_submitter_attaches_custom_id_per_policy() -> None:
     assert all("params" in r for r in submitted)
     for r in submitted:
         params = r["params"]
-        assert params["model"] == "claude-haiku-4-5"
+        assert params["model"] == "claude-haiku-4-5-20251001"
         assert any(t["name"] == "extract_policy" for t in params["tools"])
 
 

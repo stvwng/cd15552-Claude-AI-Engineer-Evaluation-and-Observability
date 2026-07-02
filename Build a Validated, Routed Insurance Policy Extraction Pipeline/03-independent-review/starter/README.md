@@ -1,6 +1,6 @@
 # Exercise 3 — Starter: Independent Reviewer and Within-Policy Integration Pass
 
-This starter is byte-identical to `exercises/02-batch-and-sla/solution/`. You now have
+This starter is byte-identical to `02-batch-and-sla/solution/`. You now have
 extraction with retry + batch processing working. This exercise adds the second-pass QA
 layer: an independent Claude reviewer (a stronger model, with NO access to the
 extractor's prompts or reasoning) plus a pure within-policy integration pass that catches
@@ -53,4 +53,4 @@ Target: 36 passed, 3 skipped.
 
 ## Onward
 
-When tests pass, move to `exercises/04-hitl-routing/starter/`.
+When tests pass, move to `04-hitl-routing/starter/`.

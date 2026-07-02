@@ -54,7 +54,7 @@ def make_tool_use_message(
     tool_name: str,
     tool_input: dict[str, Any],
     *,
-    model: str = "claude-haiku-4-5",
+    model: str = "claude-haiku-4-5-20251001",
     tool_use_id: str = "toolu_test_001",
     input_tokens: int = 100,
     output_tokens: int = 50,

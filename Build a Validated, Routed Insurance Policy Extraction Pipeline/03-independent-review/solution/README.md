@@ -6,7 +6,7 @@ contradictions like `coverage_limit < sum(endorsements.limit)` and endorsement/e
 clauses that overlap.
 
 This directory ALSO contains the scaffold for Exercise 4 (`routing.py` + `tests/test_us04_routing.py`)
-— so this is byte-identical to `exercises/04-hitl-routing/starter/`.
+— so this is byte-identical to `04-hitl-routing/starter/`.
 
 ## Verify
 

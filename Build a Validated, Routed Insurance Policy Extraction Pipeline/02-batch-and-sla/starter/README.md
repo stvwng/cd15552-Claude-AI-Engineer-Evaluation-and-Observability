@@ -1,6 +1,6 @@
 # Exercise 2 — Starter: Batch Processing With SLA-Driven Submission Frequency
 
-This starter is byte-identical to `exercises/01-retry-with-error-feedback/solution/`. You
+This starter is byte-identical to `01-retry-with-error-feedback/solution/`. You
 already have the retry loop from Exercise 1 working; now you're plugging the same per-item
 extraction into the Message Batches API for a 50% cost discount on the monthly cycle,
 and writing the helper that derives submission frequency from an SLA.
@@ -57,4 +57,4 @@ authorises the full batch if the first-pass success rate clears the threshold.
 
 ## Onward
 
-When tests pass, move to `exercises/03-independent-review/starter/`.
+When tests pass, move to `03-independent-review/starter/`.

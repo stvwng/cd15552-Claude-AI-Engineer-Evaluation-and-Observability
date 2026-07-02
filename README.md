@@ -55,8 +55,10 @@ Each exercise's `README.md` is authoritative, but every project follows the same
 ```bash
 cd "<project>/<exercise>/starter"
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
-.venv/bin/pytest -v   # or the scoped test path named in the exercise README
+.venv/bin/pytest tests/test_us01_...py   # use the scoped path from the exercise README
 ```
+
+Run the scoped test path named in the exercise README, not a bare `pytest`. Each `solution/` folder is byte-identical to the *next* exercise's `starter/`, so it already contains the next exercise's test file and its unimplemented `# TODO:` stubs. A bare `pytest` runs those too and reports failures that belong to the next exercise, not the current one. The scoped path runs only the current exercise's tests.
 
 The starter suite fails until the `# TODO:` blocks are resolved; the exercise is complete when its verify command passes cleanly.
 

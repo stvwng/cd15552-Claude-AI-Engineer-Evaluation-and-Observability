@@ -35,7 +35,7 @@ from policy_extractor.retry import build_extraction, extract_with_retry
 from policy_extractor.summary import summarize_patterns
 from policy_extractor.validator import validate_extraction
 
-DEFAULT_EXTRACTOR_MODEL = "claude-haiku-4-5"
+DEFAULT_EXTRACTOR_MODEL = "claude-haiku-4-5-20251001"
 BATCH_POLL_INTERVAL_SECONDS = 5.0
 BATCH_POLL_TIMEOUT_SECONDS = 86_400.0  # 24h SDK contract
 
@@ -166,7 +166,7 @@ def submission_frequency(*, sla_hours: float, batch_eta_hours: float) -> int:
     head_room = sla_hours - batch_eta_hours
     if head_room <= 0:
         return max(1, math.ceil(24.0 / batch_eta_hours))
-    return max(1, math.ceil(24.0 / (head_room + batch_eta_hours)))
+    return max(1, math.ceil(24.0 / head_room))
 
 
 def _build_request(

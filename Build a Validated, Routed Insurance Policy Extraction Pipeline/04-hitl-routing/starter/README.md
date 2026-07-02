@@ -1,6 +1,6 @@
 # Exercise 4 — Starter: Deterministic HITL Routing With Stratified Sampling and Calibration
 
-This starter is byte-identical to `exercises/03-independent-review/solution/`. You now have
+This starter is byte-identical to `03-independent-review/solution/`. You now have
 extraction with retry, batch processing, and the independent reviewer + integration pass
 working. The final exercise wires those signals into a deterministic routing decision and
 adds the drift-detection plumbing.

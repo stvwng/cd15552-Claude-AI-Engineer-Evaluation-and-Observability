@@ -23,7 +23,7 @@ from policy_extractor.validator import validate_extraction
 logger = logging.getLogger(__name__)
 
 
-DEFAULT_EXTRACTOR_MODEL = "claude-haiku-4-5"
+DEFAULT_EXTRACTOR_MODEL = "claude-haiku-4-5-20251001"
 
 
 def extract_with_retry(

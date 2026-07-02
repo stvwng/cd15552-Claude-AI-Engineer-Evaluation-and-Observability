@@ -19,7 +19,7 @@ from anthropic.types import ToolUseBlock
 from policy_extractor.client import MessageClient
 from policy_extractor.records import Endorsement, PolicyExtraction
 
-DEFAULT_EXTRACTOR_MODEL = "claude-haiku-4-5"
+DEFAULT_EXTRACTOR_MODEL = "claude-haiku-4-5-20251001"
 DEFAULT_REVIEWER_MODEL = "claude-sonnet-4-6"
 
 REVIEW_FIELDS = [

@@ -56,5 +56,5 @@ Target: 13 passed, 1 skipped (the skipped test is `@pytest.mark.live` — it nee
 
 ## Onward
 
-When tests pass, move to `exercises/02-batch-and-sla/starter/`. That starter is byte-identical
+When tests pass, move to `02-batch-and-sla/starter/`. That starter is byte-identical
 to this exercise's `solution/`, plus the scaffold for batch processing.

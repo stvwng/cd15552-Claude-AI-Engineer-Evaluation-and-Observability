@@ -6,7 +6,7 @@ The single-document extractor distinguishes recoverable failures (`format` /
 former with the prior offending value fed verbatim back to the model.
 
 This directory ALSO contains the scaffold for Exercise 2 (`batch.py` + `tests/test_us02_batch.py`)
-— so this is byte-identical to `exercises/02-batch-and-sla/starter/`.
+— so this is byte-identical to `02-batch-and-sla/starter/`.
 
 ## Verify
 
