@@ -46,13 +46,59 @@ def investigate(
     logistics_fail_after: int = 5,
     memory: SharedMemory | None = None,
 ) -> InvestigationResult:
-    # TODO: Run every reader (audit, logistics, quality, and read_news for each
-    #   article in data_dir/news). Pass fail_after to read_logistics only when
-    #   simulate_logistics_timeout is set.
-    # TODO: Keep only claims from successful reads (r.ok). For each FAILED read,
-    #   record an "unavailable" note and map the source's EXCLUSIVE_METRICS to a
-    #   gap reason — but only for metrics no surviving source reported.
-    # TODO: Add ONLY the successful claims to shared memory (never partial results),
-    #   then call build_briefing with the unavailable annotations. Return an
-    #   InvestigationResult carrying the briefing and all reader_results.
-    raise NotImplementedError
+    """Run every source reader, then synthesise what survived into a briefing.
+
+    A reader that fails contributes a coverage gap rather than aborting the run,
+    so the briefing reports what could not be read alongside what could.
+    """
+    data_dir = Path(data_dir)
+
+    # Each reader is scoped to its own file and signature, so they are called
+    # individually rather than through a uniform loop.
+    reader_results: list[ReaderResult] = [
+        read_audit(data_dir / "audit.json"),
+        read_logistics(
+            data_dir / "logistics.csv",
+            fail_after=logistics_fail_after if simulate_logistics_timeout else None,
+        ),
+        read_quality(data_dir / "quality.sqlite"),
+    ]
+    # Sorted so the claim order — and the resulting briefing — is deterministic.
+    for article in sorted((data_dir / "news").glob("*.txt")):
+        reader_results.append(read_news(article, extractor))
+
+    # Partial results from a failed read are deliberately excluded: they are
+    # evidence about the failure, not claims the briefing should rest on.
+    claims = [c for r in reader_results if r.ok for c in r.claims]
+    present = {c.metric_id for c in claims}
+
+    unavailable: dict[str, str] = {}
+    for result in reader_results:
+        if result.ok:
+            continue
+        failure_type = result.error.failure_type if result.error else "unknown failure"
+        for metric_id in EXCLUSIVE_METRICS.get(result.source, ()):
+            # Another source may still cover the metric — only a metric nobody
+            # reported is a real gap.
+            if metric_id not in present:
+                unavailable[metric_id] = f"{result.source} read failed ({failure_type})"
+
+    if memory is not None:
+        memory.add_claims(claims)
+    briefing = build_briefing(
+        supplier,
+        claims,
+        memory,
+        unavailable=unavailable,
+        unavailable_sources=_unavailable_sources(reader_results),
+    )
+    return InvestigationResult(briefing=briefing, reader_results=reader_results)
+
+
+def _unavailable_sources(reader_results: list[ReaderResult]) -> list[str]:
+    """Distinct sources that failed, in the order they were read."""
+    unavailable_sources: list[str] = []
+    for result in reader_results:
+        if not result.ok and result.source not in unavailable_sources:
+            unavailable_sources.append(result.source)
+    return unavailable_sources

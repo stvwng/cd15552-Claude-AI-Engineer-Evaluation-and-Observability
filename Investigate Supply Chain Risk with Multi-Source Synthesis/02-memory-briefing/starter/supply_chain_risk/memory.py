@@ -42,11 +42,11 @@ class SharedMemory:
         embed: Any = embedding_functions.SentenceTransformerEmbeddingFunction(
             model_name=embedding_model
         )
-        # TODO: Create the collection. The in-process EphemeralClient caches one
-        #   system per process, so a FIXED collection name collides across
-        #   SharedMemory instances ("Collection already exists"). Give each
-        #   instance a UNIQUE collection name, e.g. f"{COLLECTION}_{uuid.uuid4().hex}".
-        self._collection: Any = None  # replace with self._client.create_collection(...)
+        # Unique name per instance: EphemeralClient caches one system per process,
+        # so a fixed collection name would collide across SharedMemory instances.
+        self._collection: Any = self._client.create_collection(
+            name=f"{COLLECTION}_{uuid.uuid4().hex}", embedding_function=embed
+        )
 
     def add_claims(self, claims: list[Claim]) -> None:
         """Upsert claims; embeds claim+evidence, stores provenance as metadata."""
@@ -57,22 +57,39 @@ class SharedMemory:
         #   Chroma metadata values must be str/int/float/bool — None, lists, and
         #   tuples are rejected. Store source_date as an ISO string, and store the
         #   whole claim as JSON (c.model_dump_json()) so it can be rehydrated intact.
-        raise NotImplementedError
+        ids = [_claim_id(claim) for claim in claims]
+        documents = [_document(claim) for claim in claims]
+        metadatas = [
+            {
+                "claim_json": claim.model_dump_json(),
+                "source_date": claim.source_date.isoformat(),
+            }
+            for claim in claims
+        ]
+        self._collection.upsert(ids=ids, documents=documents, metadatas=metadatas)
 
     def _hydrate(self, metadatas: Any) -> list[Claim]:
         return [Claim.model_validate_json(str(m["claim_json"])) for m in metadatas]
 
     def search(self, query: str, k: int = 5) -> list[Claim]:
         """Return the k claims most semantically similar to `query`."""
-        # TODO: Query the collection with query_texts=[query] and hydrate the
-        #   returned metadatas back into Claims.
-        raise NotImplementedError
+        # query() returns one result list per query text, so unwrap the batch of one.
+        n = min(k, max(1, self._collection.count()))
+        res = self._collection.query(query_texts=[query], n_results=n)
+        metas = res["metadatas"][0] if res["metadatas"] else []
+        return self._hydrate(metas)
 
     def related_to(self, claim: Claim, k: int = 5) -> list[Claim]:
         """Return claims similar to `claim`, excluding the claim itself."""
-        # TODO: Query with the claim's document text, then drop the claim itself
-        #   (match on _claim_id) before hydrating and returning up to k claims.
-        raise NotImplementedError
+        own_id = _claim_id(claim)
+        # Over-fetch by one: the claim itself is its own nearest neighbour and is
+        # dropped below, so k neighbours still survive the filter.
+        n = min(k + 1, max(1, self._collection.count()))
+        res = self._collection.query(query_texts=[_document(claim)], n_results=n)
+        ids = res["ids"][0] if res["ids"] else []
+        metas = res["metadatas"][0] if res["metadatas"] else []
+        kept = [m for cid, m in zip(ids, metas, strict=True) if cid != own_id]
+        return self._hydrate(kept[:k])
 
     def count(self) -> int:
         return int(self._collection.count())
