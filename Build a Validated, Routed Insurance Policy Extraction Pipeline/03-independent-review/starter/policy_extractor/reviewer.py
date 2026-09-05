@@ -17,7 +17,7 @@ from typing import Any, Literal
 from anthropic.types import ToolUseBlock
 
 from policy_extractor.client import MessageClient
-from policy_extractor.records import Endorsement, PolicyExtraction
+from policy_extractor.records import PolicyExtraction
 
 DEFAULT_EXTRACTOR_MODEL = "claude-haiku-4-5-20251001"
 DEFAULT_REVIEWER_MODEL = "claude-sonnet-4-6"
@@ -123,7 +123,15 @@ def build_review_messages(
     #   </proposed_extraction>
     #
     # Return ([{"role": "user", "content": <the above>}], REVIEWER_SYSTEM_PROMPT).
-    raise NotImplementedError("LO-C — implement build_review_messages.")
+    user_content = f"""
+    <source_document>
+    {source_document.strip()}
+    </source_document>
+    <proposed_extraction>
+    {json.dumps(extracted_record, indent=2, sort_keys=True)}
+    </proposed_extraction>
+    """
+    return ([{"role": "user", "content": user_content}], REVIEWER_SYSTEM_PROMPT)
 
 
 def independent_review(
@@ -150,7 +158,27 @@ def independent_review(
     #        reason=fr.get("reason"),
     #        review_confidence=float(fr["review_confidence"]),
     #    ) for fr in field_reviews}.
-    raise NotImplementedError("LO-C — implement independent_review.")
+    messages, system = build_review_messages(
+        source_document=source_document,
+        extracted_record=extracted_record,
+    )
+    response = client.create(
+        model=model, max_tokens=max_tokens, system=system, messages=messages,
+        tools=[REVIEW_TOOL],
+        tool_choice={"type": "tool", "name": "review_extraction"},
+    )
+    field_reviews = _parse_field_reviews(response)
+    return ReviewResult(
+        agreements={
+            fr["field"]: FieldAgreement(
+                field=fr["field"],
+                agreement=fr["agreement"],
+                reason=fr.get("reason"),
+                review_confidence=float(fr["review_confidence"]),
+            )
+            for fr in field_reviews
+        }
+    )
 
 
 def _parse_field_reviews(message: Any) -> list[dict[str, Any]]:
@@ -189,7 +217,16 @@ def integration_pass(extraction: PolicyExtraction) -> list[IntegrationFinding]:
     #    or no stated premium). Only append if not None.
     #
     # Order matters for downstream readability; keep it as listed above.
-    raise NotImplementedError("LO-C — implement integration_pass.")
+    findings: list[IntegrationFinding] = [
+        _check_coverage_limit_vs_endorsements(extraction),
+        _check_endorsements_vs_exclusions(extraction),
+    ]
+    # Skipped entirely when there are no components or no stated premium, so this
+    # check contributes no finding rather than a vacuous "pass".
+    premium_finding = _check_premium_vs_components(extraction)
+    if premium_finding is not None:
+        findings.append(premium_finding)
+    return findings
 
 
 def _check_coverage_limit_vs_endorsements(extraction: PolicyExtraction) -> IntegrationFinding:
@@ -203,7 +240,36 @@ def _check_coverage_limit_vs_endorsements(extraction: PolicyExtraction) -> Integ
     #    in the details so a reader can see the math.
     # 5. Otherwise: "fail" — the primary coverage cannot be smaller than what the
     #    endorsements promise. detected check_name="coverage_limit_exceeds_endorsement_sum".
-    raise NotImplementedError("LO-C — implement _check_coverage_limit_vs_endorsements.")
+    if extraction.coverage_limit is None or extraction.endorsements is None:
+        return IntegrationFinding(
+            check_name="coverage_limit_exceeds_endorsement_sum",
+            status="pass",
+            details="Skipped: coverage limit or endorsements are missing.",
+        )
+    endorsement_total = sum(e.limit for e in extraction.endorsements if e.limit is not None)
+    if endorsement_total == 0:
+        return IntegrationFinding(
+            check_name="coverage_limit_exceeds_endorsement_sum",
+            status="pass",
+            details="No endorsement carries a numeric limit.",
+        )
+    if extraction.coverage_limit >= endorsement_total:
+        return IntegrationFinding(
+            check_name="coverage_limit_exceeds_endorsement_sum",
+            status="pass",
+            details=(
+                f"Coverage limit {extraction.coverage_limit} >= "
+                f"endorsement total {endorsement_total}."
+            ),
+        )
+    return IntegrationFinding(
+        check_name="coverage_limit_exceeds_endorsement_sum",
+        status="fail",
+        details=(
+            f"Coverage limit {extraction.coverage_limit} < "
+            f"endorsement total {endorsement_total}."
+        ),
+    )
 
 
 _STOPWORDS = frozenset(
@@ -242,7 +308,37 @@ def _check_endorsements_vs_exclusions(extraction: PolicyExtraction) -> Integrati
     # _bigrams(exclusion) is non-empty, record the pair as a contradiction.
     # No contradictions → "pass" with a brief detail. Any contradictions → "fail"
     # listing each pair in the detail.
-    raise NotImplementedError("LO-C — implement _check_endorsements_vs_exclusions.")
+    if not extraction.endorsements:
+        return IntegrationFinding(
+            check_name="endorsements_exclusions_non_contradiction",
+            status="pass",
+            details="No endorsements to compare against the exclusion list.",
+        )
+    contradictions: list[str] = []
+    for endorsement in extraction.endorsements:
+        for exclusion in extraction.exclusions:
+            shared = _bigrams(endorsement.name) & _bigrams(exclusion)
+            if shared:
+                phrases = ", ".join(" ".join(bigram) for bigram in sorted(shared))
+                contradictions.append(
+                    f"endorsement {endorsement.name!r} vs exclusion {exclusion!r} "
+                    f"(shared: {phrases})"
+                )
+    if contradictions:
+        return IntegrationFinding(
+            check_name="endorsements_exclusions_non_contradiction",
+            status="fail",
+            details=(
+                f"{len(contradictions)} endorsement/exclusion contradiction(s): "
+                + "; ".join(contradictions)
+                + "."
+            ),
+        )
+    return IntegrationFinding(
+        check_name="endorsements_exclusions_non_contradiction",
+        status="pass",
+        details="No endorsement shares a content bigram with any exclusion.",
+    )
 
 
 def _check_premium_vs_components(extraction: PolicyExtraction) -> IntegrationFinding | None:
