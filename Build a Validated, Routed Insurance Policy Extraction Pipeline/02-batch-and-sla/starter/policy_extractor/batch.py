@@ -171,7 +171,16 @@ def submission_frequency(*, sla_hours: float, batch_eta_hours: float) -> int:
     #    zero. Fall back to one submission per batch cycle:
     #    max(1, math.ceil(24.0 / batch_eta_hours)).
     # 4. Otherwise return max(1, math.ceil(24.0 / head_room)).
-    raise NotImplementedError("LO-B — implement submission_frequency.")
+    if sla_hours < batch_eta_hours:
+        raise SLATooTightError(
+            f"SLA of {sla_hours}h is tighter than the batch ETA of {batch_eta_hours}h; "
+            "the batch cannot finish in time. Use the real-time Messages API instead."
+        )
+    head_room = sla_hours - batch_eta_hours
+    if head_room == 0:
+        return max(1, math.ceil(24.0 / batch_eta_hours))
+    else:
+        return max(1, math.ceil(24.0 / head_room))
 
 
 def _build_request(
@@ -260,7 +269,129 @@ def process_with_resubmission(
     # ⚠ Why two rounds instead of multi-turn retry inside one batch: the Message
     # Batches API does not support multi-turn tool conversations within a single
     # batch request. The retry MUST be a follow-up batch.
-    raise NotImplementedError("LO-B — implement process_with_resubmission.")
+    docs_by_id = dict(policies)
+    final: dict[str, ExtractionOutcome] = {}
+    # Round-1 validation errors, kept so a Round-2 success carries its own history.
+    history_by_id: dict[str, list[ValidationError]] = {}
+    prior_by_id: dict[str, list[dict[str, Any]]] = {}
+    queued: list[str] = []
+
+    # ---- Round 1: one batch for every policy ----
+    round_1 = batch_client.collect(
+        batch_client.submit([_build_request(pid, doc, model=model) for pid, doc in policies])
+    )
+
+    for item in round_1:
+        pid = item.custom_id
+        # A "succeeded" item only means the API returned a tool_use block — the
+        # model's output can still be malformed, so validate before finalising.
+        if item.status == "succeeded" and item.tool_input is not None:
+            err = validate_extraction(item.tool_input)
+            if err is None:
+                final[pid] = build_extraction(
+                    policy_id=pid,
+                    extraction=item.tool_input,
+                    attempt_index=0,
+                    history=[],
+                )
+            elif err.category == "missing_source":
+                final[pid] = RetryFutileEscalation(
+                    policy_id=pid,
+                    field=err.field,
+                    category="missing_source",
+                    detected_pattern=err.detected_pattern,
+                    reason=err.message,
+                )
+            else:
+                history_by_id[pid] = [err]
+                prior_by_id[pid] = [
+                    {
+                        "extraction": item.tool_input,
+                        "error_field": err.field,
+                        "error_category": err.category,
+                        "error_pattern": err.detected_pattern,
+                        "error_message": err.message,
+                    }
+                ]
+                queued.append(pid)
+        else:
+            # errored / expired / canceled — nothing usable to feed back.
+            queued.append(pid)
+
+    if not queued:
+        return final
+
+    # ---- Round 2: a single resubmission batch. The Batches API has no multi-turn
+    # tool conversation within one request, so the retry must be a follow-up batch. ----
+    round_2 = batch_client.collect(
+        batch_client.submit(
+            [
+                _build_request(
+                    pid,
+                    docs_by_id[pid],
+                    model=model,
+                    prior_attempts=prior_by_id.get(pid) or None,
+                )
+                for pid in queued
+            ]
+        )
+    )
+
+    for item in round_2:
+        pid = item.custom_id
+        history = history_by_id.get(pid, [])
+        if item.status == "succeeded" and item.tool_input is not None:
+            err = validate_extraction(item.tool_input)
+            if err is None:
+                final[pid] = build_extraction(
+                    policy_id=pid,
+                    extraction=item.tool_input,
+                    attempt_index=1,
+                    history=history,
+                )
+            elif err.category == "missing_source":
+                final[pid] = RetryFutileEscalation(
+                    policy_id=pid,
+                    field=err.field,
+                    category="missing_source",
+                    detected_pattern=err.detected_pattern,
+                    reason=err.message,
+                )
+            else:
+                final[pid] = RetryFutileEscalation(
+                    policy_id=pid,
+                    field=err.field,
+                    category="missing_source",
+                    detected_pattern=f"retries_exhausted__{err.detected_pattern}",
+                    reason=(
+                        "The validator rejected the extraction on both batch rounds. "
+                        f"Last failure: {err.message}"
+                    ),
+                )
+        else:
+            final[pid] = RetryFutileEscalation(
+                policy_id=pid,
+                field="*",
+                category="missing_source",
+                detected_pattern=f"batch_item_{item.status}",
+                reason=(
+                    f"Batch item {item.status} on both rounds"
+                    f"{f': {item.error}' if item.error else ''}."
+                ),
+            )
+
+    # A queued item the second batch never reported on must still appear in the output.
+    for pid in queued:
+        if pid not in final:
+            final[pid] = RetryFutileEscalation(
+                policy_id=pid,
+                field="*",
+                category="missing_source",
+                detected_pattern="batch_item_missing",
+                reason="The resubmission batch returned no result for this policy.",
+            )
+
+    return final
 
 
 # ---------- Dry-run sample ----------
