@@ -31,6 +31,15 @@ class Claim(BaseModel):
     #   and metric_id: str.
     # source_date has NO default, so a claim cannot be built without a date.
     claim: str
+    evidence: str
+    source: str
+    source_date: date
+    confidence: float = Field(ge=0.0, le=1.0)
+    metric_id: str
+    value: float | None = None
+    unit: str | None = None
+    needs_identifier: bool = False
+    candidates: tuple[str, ...] = ()
     # TODO: add evidence, source, source_date, confidence (validated), metric_id
 
     # TODO: Add the optional numeric fields value: float | None and unit: str | None
