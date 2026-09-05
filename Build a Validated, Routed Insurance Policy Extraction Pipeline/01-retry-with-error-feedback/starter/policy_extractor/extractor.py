@@ -182,7 +182,17 @@ def build_extraction_messages(
         #
         # Then join the blocks with newlines and append to user_content with a short
         # instruction line ("Your previous attempts were rejected by the validator. ...").
-        raise NotImplementedError("LO-A — implement the retry-feedback block.")
+        retry_feedback_blocks = []
+        for index, attempt in enumerate(prior_attempts):
+            retry_feedback_blocks.append(
+                f"<prior_attempt index=\"{index + 1}\">\n"
+                f"<extraction>{attempt['extraction']}</extraction>\n"
+                f"<validation_error field=\"{attempt['field']}\" category=\"{attempt['category']}\" detected_pattern=\"{attempt['detected_pattern']}\">\n"
+                f"{attempt['error_message']}\n"
+                f"</validation_error>\n"
+                f"</prior_attempt>\n"
+            )
+        user_content = f"{user_content}\n\nYour previous attempts were rejected by the validator. Here is the feedback for each attempt:\n\n" + "\n".join(retry_feedback_blocks)
 
     return [{"role": "user", "content": user_content}], SYSTEM_PROMPT
 

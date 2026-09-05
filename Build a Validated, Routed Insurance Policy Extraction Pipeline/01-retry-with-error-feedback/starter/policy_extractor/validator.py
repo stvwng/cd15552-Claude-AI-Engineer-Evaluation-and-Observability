@@ -33,7 +33,14 @@ def _check_required_present(extraction: dict[str, Any]) -> ValidationError | Non
     # return a ValidationError with category="missing_source" and
     # detected_pattern=f"{field}_absent". The message should explain that retry is
     # futile because the source document does not contain this information.
-    raise NotImplementedError("LO-A — implement _check_required_present.")
+    for field in _REQUIRED_FIELDS:
+        if extraction.get(field) is None:
+            return ValidationError(
+                category="missing_source",
+                detected_pattern=f"{field}_absent",
+                message=f"The source document does not contain the required information for {field}."
+            )
+    return None
 
 
 def _check_numeric_ranges(extraction: dict[str, Any]) -> ValidationError | None:
@@ -42,8 +49,26 @@ def _check_numeric_ranges(extraction: dict[str, Any]) -> ValidationError | None:
     # Use detected_patterns "negative_premium", "negative_deductible",
     # "negative_coverage_limit". category="format" — these are recoverable, so the
     # retry loop should feed the offending value back to the model.
-    raise NotImplementedError("LO-A — implement _check_numeric_ranges.")
-
+    
+    if extraction.get("premium_amount") is not None and extraction.get("premium_amount") < 0:
+        return ValidationError(
+            category="format",
+            detected_pattern="negative_premium",
+            message="The premium amount is negative."
+        )
+    if extraction.get("deductible") is not None and extraction.get("deductible") < 0:
+        return ValidationError(
+            category="format",
+            detected_pattern="negative_deductible",
+            message="The deductible is negative."
+        )
+    if extraction.get("coverage_limit") is not None and extraction.get("coverage_limit") < 0:
+        return ValidationError(
+            category="format",
+            detected_pattern="negative_coverage_limit",
+            message="The coverage limit is negative."
+        )
+    return None
 
 def _check_premium_components_consistency(
     extraction: dict[str, Any],
@@ -56,4 +81,13 @@ def _check_premium_components_consistency(
     # ⚠ Use a tolerance on the comparison (e.g., abs(delta) > 0.01) — components
     # carry cents and strict floating-point equality will fire false positives on
     # every itemised policy. detected_pattern="premium_does_not_match_components".
-    raise NotImplementedError("LO-A — implement _check_premium_components_consistency.")
+    
+    if extraction.get("premium_components") is not None and extraction.get("premium_amount") is not None:
+        total_components = sum(component.get("amount") for component in extraction.get("premium_components"))
+        if abs(total_components - extraction.get("premium_amount")) > 0.01:
+            return ValidationError(
+                category="consistency",
+                detected_pattern="premium_does_not_match_components",
+                message="The premium amount does not match the sum of the premium components."
+            )
+    return None

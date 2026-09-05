@@ -76,7 +76,31 @@ def extract_with_retry(
     # If the loop falls through (all max_retries exhausted on format/consistency),
     # return a RetryFutileEscalation referencing the last error with
     # detected_pattern=f"retries_exhausted__{last_error.detected_pattern}".
-    raise NotImplementedError("LO-A — implement extract_with_retry.")
+    
+    prior_attempts: list[dict[str, Any]] = []
+    history: list[ValidationError] = []
+    for attempt_index in range(max_retries + 1):
+        messages, system = build_extraction_messages(document_text, prior_attempts)
+        response = client.create(
+            model=model, max_tokens=max_tokens, system=system, messages=messages,
+            tools=[EXTRACT_POLICY_TOOL],
+            tool_choice={"type": "tool", "name": "extract_policy"},
+        )
+        extraction = parse_tool_use(response)
+        error = validate_extraction(extraction)
+        if error is None:
+            return build_extraction(
+                policy_id=policy_id, extraction=extraction, attempt_index=attempt_index, history=history
+            )
+        elif error.category == "missing_source":
+            return RetryFutileEscalation(detected_pattern=f"retries_exhausted__{error.detected_pattern}")
+        elif error.category in {"format", "consistency"}:
+            prior_attempts.append({"extraction": extraction, "error_field": error.field, "error_category": error.category, "error_pattern": error.detected_pattern, "error_message": error.message})
+            continue
+        else:
+            return RetryFutileEscalation(detected_pattern=f"retries_exhausted__{error.detected_pattern}")
+        
+    return RetryFutileEscalation(detected_pattern=f"retries_exhausted__{history[-1].detected_pattern}")
 
 
 def build_extraction(
