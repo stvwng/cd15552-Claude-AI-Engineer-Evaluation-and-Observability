@@ -14,54 +14,106 @@ from __future__ import annotations
 
 from mortgage_extractor.models import DocumentType
 
-# TODO: Build the NORMALIZATION_RULES constant as a single string. It must
-# contain at minimum:
-#   - the literal substring "Square footage" with an example like
-#     "about 2,400 sq ft" → 2400
-#   - the literal substring "Currency" with an example like "$485,000" → 485000.0
-#   - the literal substring "Percentage" with an example like "6.5%" → 0.065
-# The test in tests/test_us03_prompts.py::test_ac_03_05_normalization_rules_is_single_referenced_constant
-# asserts those substrings, the "6.5%" / "0.065" pair, and the "2,400" / "2400" pair.
-NORMALIZATION_RULES = ""  # TODO: replace with the rule text
+# Interpolated into every extractor prompt. Defined once so the appraisal and
+# income paths cannot drift apart — a second copy is a second thing to update.
+NORMALIZATION_RULES = """\
+Normalization rules — apply BEFORE writing values into structured fields:
+1. Square footage: emit an INTEGER (e.g., "about 2,400 sq ft" → 2400; "~3,100 SF" → 3100).
+2. Currency amounts: strip "$" and commas; emit a NUMBER (e.g., "$485,000" → 485000.0; "$1,234.56" → 1234.56).
+3. Percentage fields (interest rates, ratios): emit a DECIMAL (e.g., "6.5%" → 0.065; "6.875%" → 0.06875).
+"""
 
-# TODO: Build the _CATEGORICAL_CRITERIA constant as a numbered list of at
-# least four rules. The FIRST item must be, VERBATIM:
-#
-#     1. Return null for any field not explicitly stated in the document. Do not infer, default, or fabricate.
-#
-# (This exact substring must appear as item 1.) The remaining
-# items should distinguish base income from bonus, commission, and overtime;
-# tell the model to emit "other" + *_detail when an enum doesn't fit; and
-# remind the model that numeric fields receive numbers, not strings.
-_CATEGORICAL_CRITERIA = ""  # TODO: replace with the numbered criteria block
+# Criterion 1 is the load-bearing one: without it the model fills silence with
+# plausible-looking defaults, which is worse than an explicit null because it
+# passes schema validation and reads as fact downstream.
+_CATEGORICAL_CRITERIA = """\
+Categorical criteria:
+1. Return null for any field not explicitly stated in the document. Do not infer, default, or fabricate.
+2. Base income is regularly recurring wages paid for ordinary hours. Distinguish it from bonus (irregular, performance-tied), commission (tied to sales volume), and overtime (premium hours). When the document is ambiguous, place the value in the most specific matching field; only use `other_earnings` as a last resort.
+3. When a categorical field's value is not in the listed enum, emit "other" and write the actual value into the corresponding `*_detail` field. Do not pick the "closest" enum value.
+4. Numeric fields receive numbers (per the normalization rules above), not strings. If the document is ambiguous about a numeric value (e.g., a smudged digit), emit null and rely on the validator / human review path.
+"""
 
-# TODO: Build the _FEW_SHOT_EXAMPLES constant as a single string containing
-# EXACTLY FOUR <example> blocks. Each block has this shape:
-#
-#     <example name="<short-name>">
-#     <input>
-#     ...document excerpt...
-#     </input>
-#     <reasoning>
-#     ...explanation of WHY the chosen output is correct vs. the plausible
-#     alternative...
-#     </reasoning>
-#     <output>
-#     ...JSON output...
-#     </output>
-#     </example>
-#
-# Four examples are required, whose names contain (in some order):
-#   - "clean"     — a fully-populated paystub where every component is stated
-#   - "missing"   — a paystub that does not mention bonus; bonus_monthly is null
-#   - "informal"  — an appraisal saying "about 2,400 sq ft"; sqft is 2400 (int)
-#   - "mismatch"  — a paystub whose stated total doesn't equal the line-item sum
-#
-# Each example must contain an inline <reasoning>...</reasoning>
-# block explaining the choice — for instance, for "missing":
-# "bonus_ytd is null because the document says no bonus this year — fabricating
-# a zero would imply zero earned, not zero reported."
-_FEW_SHOT_EXAMPLES = ""  # TODO: replace with the four <example> blocks
+# Contrastive pairs, not just positive cases: each <reasoning> block names the
+# plausible wrong answer and says why it loses. "clean" vs "missing" is the
+# stated-zero vs absent distinction; "mismatch" is the one that stops the model
+# from helpfully repairing arithmetic it should be surfacing instead.
+_FEW_SHOT_EXAMPLES = """\
+<example name="clean">
+<input>
+PAYSTUB. Employee: Jane Park. Pay frequency: monthly. Period 11/01-11/30/2024.
+Base monthly pay: $4,800.00. Monthly bonus: $400.00. Commission this month: $0.00.
+Other earnings: none. Stated monthly total: $5,200.00.
+</input>
+<reasoning>
+All four income components are explicitly stated. Commission is explicitly
+$0.00 in the document, so we report 0.0 — not null — because the document
+*stated* it as zero. The stated_monthly_total of $5,200 equals the sum
+($4,800 + $400 + $0 + $0), so the validator will mark this consistent; we
+still emit both fields verbatim so the validator can confirm.
+</reasoning>
+<output>
+{"income": {"base_monthly": 4800.00, "bonus_monthly": 400.00, "commission_monthly": 0.00, "other_monthly": null, "stated_monthly_total": 5200.00}}
+</output>
+</example>
+
+<example name="missing-bonus-returns-null">
+<input>
+PAYSTUB. Employee: Carlos Mendez. Pay frequency: monthly. Period 03/01-03/31/2025.
+Base monthly pay: $3,500.00. The document does not mention bonus, commission, or overtime anywhere.
+</input>
+<reasoning>
+The document does not mention bonus, commission, or overtime. Rule #1 says
+to return null when the document does not state a value — fabricating zero
+would imply the employee earned zero bonus, not that the document is silent
+about bonus. These are different facts. The downstream consumer treats null
+as "we don't know" and zero as "we know it's zero"; conflating them hides
+the underlying uncertainty.
+</reasoning>
+<output>
+{"income": {"base_monthly": 3500.00, "bonus_monthly": null, "commission_monthly": null, "overtime_monthly": null, "other_monthly": null, "stated_monthly_total": null}}
+</output>
+</example>
+
+<example name="informal-measurement-normalized">
+<input>
+APPRAISAL. Subject property at 123 Oak Lane, Portland, OR 97214.
+Gross living area: about 2,400 sq ft (above-grade finished).
+Property type: single family. Occupancy: primary residence.
+</input>
+<reasoning>
+"about 2,400 sq ft" is an informal expression of a numeric measurement.
+Normalization rule #1 (square footage as integer) requires emitting the
+integer 2400, not the source phrase and not a rounded variant. The hedge
+word "about" does not change the recorded value; if the appraiser were
+confident in a different value they would have stated it. The schema enum
+includes "single_family" exactly, so property_type uses the enum value and
+property_type_detail is null.
+</reasoning>
+<output>
+{"property": {"gross_living_area_sqft": 2400, "property_type": "single_family", "property_type_detail": null, "occupancy_type": "primary_residence"}}
+</output>
+</example>
+
+<example name="sum-mismatch-recorded-verbatim">
+<input>
+PAYSTUB. Employee: Aiko Tanaka. Pay frequency: monthly.
+Base monthly pay: $4,000.00. Monthly bonus: $500.00. Commission this month: $0.00.
+Other earnings: $0.00. Stated monthly total: $5,000.00.
+</input>
+<reasoning>
+The stated_monthly_total ($5,000.00) does not equal the sum of components
+($4,500.00). Do NOT silently correct the discrepancy — record both values
+verbatim. The mathematical-consistency validator downstream will flag this
+so a human can investigate the source document. Lying about either value
+would hide the underlying error from the underwriting team. The "right"
+answer here is to surface the conflict, not to resolve it.
+</reasoning>
+<output>
+{"income": {"base_monthly": 4000.00, "bonus_monthly": 500.00, "commission_monthly": 0.00, "other_monthly": 0.00, "stated_monthly_total": 5000.00}}
+</output>
+</example>
+"""
 
 
 def classifier_system_prompt() -> str:
@@ -88,17 +140,16 @@ def extractor_system_prompt(doc_type: DocumentType) -> str:
     examples; the income-verification prompt additionally surfaces the full
     explicit categorical criteria block.
     """
-    # TODO: Assemble the extractor system prompt for non-income document types
-    # (LOAN_APPLICATION, APPRAISAL):
-    #   1. If doc_type is INCOME_VERIFICATION, delegate to
-    #      income_verification_system_prompt() and return.
-    #   2. Otherwise, return:
-    #        intro + NORMALIZATION_RULES + "\n" + _FEW_SHOT_EXAMPLES
-    #      where `intro` is a 2-3 sentence instruction that names the
-    #      doc_type, tells the model to call extract_<doc_type> exactly once
-    #      with the structured data, and offer `flag_for_review` if the
-    #      document is unreadable.
-    raise NotImplementedError("Exercise 3: implement extractor_system_prompt()")
+    if doc_type is DocumentType.INCOME_VERIFICATION:
+        return income_verification_system_prompt()
+
+    intro = (
+        "You are an extraction agent for a mortgage lender. The document is a "
+        f"{doc_type.value} document. Call `extract_{doc_type.value}` exactly "
+        "once with the structured data the document contains, or "
+        "`flag_for_review` if the document is unreadable or off-topic.\n\n"
+    )
+    return intro + NORMALIZATION_RULES + "\n" + _FEW_SHOT_EXAMPLES
 
 
 def income_verification_system_prompt() -> str:
@@ -109,13 +160,21 @@ def income_verification_system_prompt() -> str:
     shared :data:`NORMALIZATION_RULES`, and four contrastive few-shot examples
     each with an inline ``<reasoning>`` block.
     """
-    # TODO: Assemble the income-verification prompt by concatenating:
-    #   1. A short intro (2-3 sentences) naming the document type and telling
-    #      the model to call extract_income_verification exactly once or
-    #      flag_for_review if the document is unreadable.
-    #   2. _CATEGORICAL_CRITERIA (the four numbered rules).
-    #   3. A blank line.
-    #   4. NORMALIZATION_RULES.
-    #   5. A blank line.
-    #   6. _FEW_SHOT_EXAMPLES (the four <example> blocks).
-    raise NotImplementedError("Exercise 3: implement income_verification_system_prompt()")
+    # Income verification is the only doc type that gets the full criteria
+    # block: it is where the null-vs-zero and component-attribution mistakes
+    # actually happen, and criteria cost tokens on every call.
+    intro = (
+        "You are an extraction agent for a mortgage lender. The document is an "
+        "income-verification document (W-2, paystub, employer letter, etc.). "
+        "Call `extract_income_verification` exactly once with the structured "
+        "data the document contains, or `flag_for_review` if the document is "
+        "unreadable.\n\n"
+    )
+    return (
+        intro
+        + _CATEGORICAL_CRITERIA
+        + "\n"
+        + NORMALIZATION_RULES
+        + "\n"
+        + _FEW_SHOT_EXAMPLES
+    )
