@@ -73,7 +73,45 @@ def route_extraction(
     #
     # Return a RoutingDecision with all five lists/maps populated, including a
     # dict copy of extraction.confidence as confidence_summary.
-    raise NotImplementedError("LO-D — implement route_extraction.")
+    fields_below_threshold = sorted(
+        name for name, confidence in extraction.confidence.items() if confidence < threshold
+    )
+    disagreements = sorted(
+        name
+        for name, agreement in review.agreements.items()
+        if agreement.agreement == "disagree"
+    )
+    integration_failures = sorted(
+        finding.check_name for finding in integration_findings if finding.status == "fail"
+    )
+
+    # Deterministic on the conjunction of all three signals: a high self-rated
+    # confidence must not override reviewer disagreement or an integration failure.
+    triggered: list[str] = []
+    if fields_below_threshold:
+        triggered.append(f"fields_below_threshold={fields_below_threshold}")
+    if disagreements:
+        triggered.append(f"reviewer_disagreement={disagreements}")
+    if integration_failures:
+        triggered.append(f"integration_failure={integration_failures}")
+
+    if triggered:
+        decision: Decision = "human_review"
+        reason = "; ".join(triggered)
+    else:
+        decision = "auto_approve"
+        reason = "all confidence at/above threshold, reviewer agrees, integration clean"
+
+    return RoutingDecision(
+        policy_id=extraction.policy_id,
+        policy_type=extraction.policy_type,
+        decision=decision,
+        reason=reason,
+        fields_below_threshold=fields_below_threshold,
+        reviewer_disagreements=disagreements,
+        integration_failures=integration_failures,
+        confidence_summary=dict(extraction.confidence),
+    )
 
 
 def apply_stratified_spot_check(
@@ -109,7 +147,36 @@ def apply_stratified_spot_check(
     #    new RoutingDecision with decision="spot_check" and reason="stratified
     #    drift-detection sample" (preserve the other fields). Non-promoted entries
     #    pass through unchanged.
-    raise NotImplementedError("LO-D — implement apply_stratified_spot_check.")
+    
+    # Index-keyed so the output can be rebuilt in the caller's original order.
+    eligible_by_policy_type: dict[str, list[int]] = defaultdict(list)
+    for index, decision in enumerate(decisions):
+        if decision.decision == "auto_approve":
+            eligible_by_policy_type[decision.policy_type].append(index)
+
+    promoted_indices: set[int] = set()
+    for indices in eligible_by_policy_type.values():
+        n = len(indices)
+        # ceil, not int/round: a 2-record stratum at 20% would floor to zero and
+        # drop that policy type out of the drift-detection sample entirely.
+        k = min(max(1, math.ceil(sample_pct * n)), n)
+        promoted_indices |= set(rng.sample(indices, k))
+
+    return [
+        RoutingDecision(
+            policy_id=decision.policy_id,
+            policy_type=decision.policy_type,
+            decision="spot_check",
+            reason="stratified drift-detection sample",
+            fields_below_threshold=list(decision.fields_below_threshold),
+            reviewer_disagreements=list(decision.reviewer_disagreements),
+            integration_failures=list(decision.integration_failures),
+            confidence_summary=dict(decision.confidence_summary),
+        )
+        if index in promoted_indices
+        else decision
+        for index, decision in enumerate(decisions)
+    ]
 
 
 def write_routing_decisions(
@@ -176,4 +243,26 @@ def calibration_report(labels: Sequence[CalibrationLabel]) -> CalibrationReport:
     # confidence space, comparable across cells. Log-loss and confidence
     # intervals require log/CI tooling to interpret and won't surface "this cell
     # is much worse than the overall number" at a glance.
-    raise NotImplementedError("LO-D — implement calibration_report.")
+    buckets: dict[tuple[str, str], list[CalibrationLabel]] = defaultdict(list)
+    for label in labels:
+        buckets[(label.policy_type, label.field)].append(label)
+
+    cells: dict[tuple[str, str], CalibrationCell] = {}
+    for (policy_type, field_name), bucket in buckets.items():
+        n = len(bucket)
+        cells[(policy_type, field_name)] = CalibrationCell(
+            policy_type=policy_type,
+            field=field_name,
+            samples=n,
+            mean_predicted_confidence=sum(b.predicted_confidence for b in bucket) / n,
+            observed_accuracy=sum(1 for b in bucket if b.correct) / n,
+            brier_score=sum(_squared_error(b) for b in bucket) / n,
+        )
+
+    overall_brier = sum(_squared_error(b) for b in labels) / len(labels)
+    return CalibrationReport(cells=cells, overall_brier=overall_brier)
+
+
+def _squared_error(label: CalibrationLabel) -> float:
+    """Brier contribution for one label: (predicted - actual)^2 against the 0/1 outcome."""
+    return (label.predicted_confidence - (1.0 if label.correct else 0.0)) ** 2
