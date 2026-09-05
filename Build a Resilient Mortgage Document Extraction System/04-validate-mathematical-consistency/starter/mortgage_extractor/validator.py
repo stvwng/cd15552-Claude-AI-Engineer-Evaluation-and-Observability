@@ -51,4 +51,19 @@ def validate(
     # Friction note: the default $1.00 tolerance absorbs cent-level OCR
     # rounding. If you set it to 0.0 you will get false-positive discrepancies
     # on documents like "$4,500.00" vs "$4,499.99". See the README for details.
-    raise NotImplementedError("Exercise 4: implement validate()")
+    discrepancies = []
+    if extraction.income is not None:
+        calculated = extraction.income.calculated_monthly_total
+        stated = extraction.income.stated_monthly_total
+        if calculated is not None and stated is not None:
+            delta = round(calculated - stated, 2)
+            if abs(delta) > tolerance:
+                discrepancies.append(
+                    Discrepancy(
+                        field="total_monthly_income",
+                        calculated=round(calculated, 2),
+                        stated=round(stated, 2),
+                        delta=delta,
+                    )
+                )
+    return ValidationReport(consistent=not discrepancies, discrepancies=discrepancies)

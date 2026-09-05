@@ -79,7 +79,18 @@ class Income(_BaseRecord):
         #
         # Hint: build a list of the five component values, filter out None,
         # and return sum() of what's left OR None if the filtered list is empty.
-        raise NotImplementedError("Exercise 4: implement Income.calculated_monthly_total")
+        all_components = [
+            self.base_monthly,
+            self.bonus_monthly,
+            self.commission_monthly,
+            self.overtime_monthly,
+            self.other_monthly,
+        ]
+        # Guard on the *filtered* list, not all_components: that literal always
+        # has five entries, so sum() would turn a silent document into 0.0 and
+        # erase the "stated nothing" vs "stated zero" distinction.
+        non_null = [component for component in all_components if component is not None]
+        return sum(non_null) if non_null else None
 
 
 class MortgageExtraction(_BaseRecord):
