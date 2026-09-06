@@ -1,0 +1,129 @@
+=== System 2 (mortgage-extract) — test suite ===
+captured: 2026-09-05T22:21:34Z
+cwd: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution
+git rev: d5951cc0912a96b409523841280e07b4372a78b5
+
+--- RUN A: offline (ANTHROPIC_API_KEY unset) ---
+$ .venv/bin/pytest tests/ -v
+
+============================= test session starts ==============================
+platform darwin -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 25 items
+
+tests/test_us01_schema.py::test_ac_01_01_tool_definition_shape PASSED    [  4%]
+tests/test_us01_schema.py::test_ac_01_02_required_and_optional_fields PASSED [  8%]
+tests/test_us01_schema.py::test_ac_01_03_enum_other_with_detail_field PASSED [ 12%]
+tests/test_us01_schema.py::test_ac_01_04_at_least_three_nullable_fields PASSED [ 16%]
+tests/test_us01_schema.py::test_ac_01_05_list_nullable_fields_returns_dotted_paths PASSED [ 20%]
+tests/test_us02_pipeline.py::test_ac_02_01_classify_uses_forced_tool_choice PASSED [ 24%]
+tests/test_us02_pipeline.py::test_ac_02_02_extract_uses_any_tool_choice_against_doc_type_tools PASSED [ 28%]
+tests/test_us02_pipeline.py::test_ac_02_03_extract_returns_typed_mortgage_extraction PASSED [ 32%]
+tests/test_us02_pipeline.py::test_ac_02_04_other_short_circuits_before_extract PASSED [ 36%]
+tests/test_us02_pipeline.py::test_ac_02_04_extract_directly_with_other_raises PASSED [ 40%]
+tests/test_us02_pipeline.py::test_ac_02_05_default_model_is_haiku_and_overridable PASSED [ 44%]
+tests/test_us03_prompts.py::test_ac_03_01_system_prompt_has_numbered_criteria_with_verbatim_first PASSED [ 48%]
+tests/test_us03_prompts.py::test_ac_03_02_four_contrastive_examples PASSED [ 52%]
+tests/test_us03_prompts.py::test_ac_03_02b_each_example_has_inline_reasoning PASSED [ 56%]
+tests/test_us03_prompts.py::test_ac_03_03_missing_bonus_returns_none PASSED [ 60%]
+tests/test_us03_prompts.py::test_ac_03_04_informal_sqft_normalized_to_integer PASSED [ 64%]
+tests/test_us03_prompts.py::test_ac_03_05_normalization_rules_is_single_referenced_constant PASSED [ 68%]
+tests/test_us04_validator.py::test_ac_04_01_extraction_carries_both_calculated_and_stated PASSED [ 72%]
+tests/test_us04_validator.py::test_ac_04_02_consistent_when_within_tolerance PASSED [ 76%]
+tests/test_us04_validator.py::test_ac_04_02_inconsistent_when_beyond_tolerance PASSED [ 80%]
+tests/test_us04_validator.py::test_ac_04_02_default_tolerance_is_one_dollar PASSED [ 84%]
+tests/test_us04_validator.py::test_ac_04_03_discrepancy_carries_field_calc_stated_delta PASSED [ 88%]
+tests/test_us04_validator.py::test_ac_04_04_real_paystub_with_sum_mismatch_is_flagged PASSED [ 92%]
+tests/test_us04_validator.py::test_clean_extraction_yields_consistent_true PASSED [ 96%]
+tests/test_us04_validator.py::test_validation_report_round_trips_through_json PASSED [100%]
+
+============================== 25 passed in 1.10s ==============================
+exit=0
+
+--- RUN B: rerun (determinism check) ---
+
+============================= test session starts ==============================
+platform darwin -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 25 items
+
+tests/test_us01_schema.py::test_ac_01_01_tool_definition_shape PASSED    [  4%]
+tests/test_us01_schema.py::test_ac_01_02_required_and_optional_fields PASSED [  8%]
+tests/test_us01_schema.py::test_ac_01_03_enum_other_with_detail_field PASSED [ 12%]
+tests/test_us01_schema.py::test_ac_01_04_at_least_three_nullable_fields PASSED [ 16%]
+tests/test_us01_schema.py::test_ac_01_05_list_nullable_fields_returns_dotted_paths PASSED [ 20%]
+tests/test_us02_pipeline.py::test_ac_02_01_classify_uses_forced_tool_choice PASSED [ 24%]
+tests/test_us02_pipeline.py::test_ac_02_02_extract_uses_any_tool_choice_against_doc_type_tools PASSED [ 28%]
+tests/test_us02_pipeline.py::test_ac_02_03_extract_returns_typed_mortgage_extraction PASSED [ 32%]
+tests/test_us02_pipeline.py::test_ac_02_04_other_short_circuits_before_extract PASSED [ 36%]
+tests/test_us02_pipeline.py::test_ac_02_04_extract_directly_with_other_raises PASSED [ 40%]
+tests/test_us02_pipeline.py::test_ac_02_05_default_model_is_haiku_and_overridable PASSED [ 44%]
+tests/test_us03_prompts.py::test_ac_03_01_system_prompt_has_numbered_criteria_with_verbatim_first PASSED [ 48%]
+tests/test_us03_prompts.py::test_ac_03_02_four_contrastive_examples PASSED [ 52%]
+tests/test_us03_prompts.py::test_ac_03_02b_each_example_has_inline_reasoning PASSED [ 56%]
+tests/test_us03_prompts.py::test_ac_03_03_missing_bonus_returns_none PASSED [ 60%]
+tests/test_us03_prompts.py::test_ac_03_04_informal_sqft_normalized_to_integer PASSED [ 64%]
+tests/test_us03_prompts.py::test_ac_03_05_normalization_rules_is_single_referenced_constant PASSED [ 68%]
+tests/test_us04_validator.py::test_ac_04_01_extraction_carries_both_calculated_and_stated PASSED [ 72%]
+tests/test_us04_validator.py::test_ac_04_02_consistent_when_within_tolerance PASSED [ 76%]
+tests/test_us04_validator.py::test_ac_04_02_inconsistent_when_beyond_tolerance PASSED [ 80%]
+tests/test_us04_validator.py::test_ac_04_02_default_tolerance_is_one_dollar PASSED [ 84%]
+tests/test_us04_validator.py::test_ac_04_03_discrepancy_carries_field_calc_stated_delta PASSED [ 88%]
+tests/test_us04_validator.py::test_ac_04_04_real_paystub_with_sum_mismatch_is_flagged PASSED [ 92%]
+tests/test_us04_validator.py::test_clean_extraction_yields_consistent_true PASSED [ 96%]
+tests/test_us04_validator.py::test_validation_report_round_trips_through_json PASSED [100%]
+
+============================== 25 passed in 0.39s ==============================
+exit=0
+
+--- RUN C: live (ANTHROPIC_API_KEY set) ---
+
+============================= test session starts ==============================
+platform darwin -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 25 items
+
+tests/test_us01_schema.py::test_ac_01_01_tool_definition_shape PASSED    [  4%]
+tests/test_us01_schema.py::test_ac_01_02_required_and_optional_fields PASSED [  8%]
+tests/test_us01_schema.py::test_ac_01_03_enum_other_with_detail_field PASSED [ 12%]
+tests/test_us01_schema.py::test_ac_01_04_at_least_three_nullable_fields PASSED [ 16%]
+tests/test_us01_schema.py::test_ac_01_05_list_nullable_fields_returns_dotted_paths PASSED [ 20%]
+tests/test_us02_pipeline.py::test_ac_02_01_classify_uses_forced_tool_choice PASSED [ 24%]
+tests/test_us02_pipeline.py::test_ac_02_02_extract_uses_any_tool_choice_against_doc_type_tools PASSED [ 28%]
+tests/test_us02_pipeline.py::test_ac_02_03_extract_returns_typed_mortgage_extraction PASSED [ 32%]
+tests/test_us02_pipeline.py::test_ac_02_04_other_short_circuits_before_extract PASSED [ 36%]
+tests/test_us02_pipeline.py::test_ac_02_04_extract_directly_with_other_raises PASSED [ 40%]
+tests/test_us02_pipeline.py::test_ac_02_05_default_model_is_haiku_and_overridable PASSED [ 44%]
+tests/test_us03_prompts.py::test_ac_03_01_system_prompt_has_numbered_criteria_with_verbatim_first PASSED [ 48%]
+tests/test_us03_prompts.py::test_ac_03_02_four_contrastive_examples PASSED [ 52%]
+tests/test_us03_prompts.py::test_ac_03_02b_each_example_has_inline_reasoning PASSED [ 56%]
+tests/test_us03_prompts.py::test_ac_03_03_missing_bonus_returns_none PASSED [ 60%]
+tests/test_us03_prompts.py::test_ac_03_04_informal_sqft_normalized_to_integer PASSED [ 64%]
+tests/test_us03_prompts.py::test_ac_03_05_normalization_rules_is_single_referenced_constant PASSED [ 68%]
+tests/test_us04_validator.py::test_ac_04_01_extraction_carries_both_calculated_and_stated PASSED [ 72%]
+tests/test_us04_validator.py::test_ac_04_02_consistent_when_within_tolerance PASSED [ 76%]
+tests/test_us04_validator.py::test_ac_04_02_inconsistent_when_beyond_tolerance PASSED [ 80%]
+tests/test_us04_validator.py::test_ac_04_02_default_tolerance_is_one_dollar PASSED [ 84%]
+tests/test_us04_validator.py::test_ac_04_03_discrepancy_carries_field_calc_stated_delta PASSED [ 88%]
+tests/test_us04_validator.py::test_ac_04_04_real_paystub_with_sum_mismatch_is_flagged PASSED [ 92%]
+tests/test_us04_validator.py::test_clean_extraction_yields_consistent_true PASSED [ 96%]
+tests/test_us04_validator.py::test_validation_report_round_trips_through_json PASSED [100%]
+
+============================== 25 passed in 0.37s ==============================
+exit=0
+
+--- NOTE on test count ---
+The solution README states '28 acceptance tests'. The suite as shipped collects 25:
+
+25 tests collected in 0.63s
+Per-file test function counts: us01_schema=5, us02_pipeline=6, us03_prompts=6, us04_validator=8 (total 25).
+There are no skipped or live-marked tests in this suite. 25/25 pass.

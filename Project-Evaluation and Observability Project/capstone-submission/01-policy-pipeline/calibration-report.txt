@@ -1,0 +1,22 @@
+=== System 1 — sliced (policy_type x field) calibration report ===
+captured: 2026-09-05T22:30:51Z
+cwd: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Validated, Routed Insurance Policy Extraction Pipeline/04-hitl-routing/solution
+$ .venv/bin/python calibration_report.py
+
+auto      premium_amount  n=3 conf=0.95 acc=1.00 brier=0.003
+home      deductible      n=1 conf=0.90 acc=1.00 brier=0.010
+umbrella  exclusions      n=2 conf=0.93 acc=0.00 brier=0.865
+OVERALL brier=0.291
+exit=0
+
+--- reading this report ---
+Brier score = mean squared error between stated confidence and the binary outcome.
+Lower is better; 0.0 is perfect, 0.25 is the score of always saying 50%.
+
+The umbrella/exclusions cell states 0.93 confidence and is wrong every single time
+(acc=0.00), for a cell Brier of 0.865 — catastrophic. Yet the OVERALL Brier is only
+0.291, which on its own reads as mediocre-but-tolerable rather than alarming.
+Averaging over six samples dilutes two catastrophic ones with four good ones.
+
+That is the whole argument for slicing: an aggregate answers 'how are we doing?',
+a slice answers 'where are we failing?'. Only the second is actionable.

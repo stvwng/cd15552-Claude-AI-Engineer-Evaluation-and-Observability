@@ -1,0 +1,38 @@
+=== System 3 (supply-chain-investigate) — static analysis ===
+captured: 2026-09-05T22:24:38Z
+cwd: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Investigate Supply Chain Risk with Multi-Source Synthesis/03-resilient-coordinator/solution
+interpreter: Python 3.12.3
+
+HEADLINE RESULT: mypy clean (8 source files), ruff clean. See the note below for why the
+                 --python-version flag is required on this machine.
+
+------------------------------------------------------------------
+$ .venv/bin/mypy --python-version 3.12 supply_chain_risk/
+Success: no issues found in 8 source files
+exit=0
+
+$ .venv/bin/ruff check supply_chain_risk/ tests/
+All checks passed!
+exit=0
+
+------------------------------------------------------------------
+NOTE — why --python-version 3.12 is needed here (an honest environment finding)
+
+Running the bare command from the instructions produces a failure that is NOT in
+project code:
+
+  $ .venv/bin/mypy supply_chain_risk/
+.venv/lib/python3.12/site-packages/numpy/__init__.pyi:737: error: Type statement is only supported in Python 3.12 and greater  [syntax]
+Found 1 error in 1 file (errors prevented further checking)
+  exit=2
+
+Diagnosis: pyproject.toml pins [tool.mypy] python_version = "3.11", but this machine runs
+CPython 3.12.3. numpy (pulled in transitively by chromadb/sentence-transformers) ships stubs
+that use PEP 695 'type' statements, which are 3.12+ syntax. Under the 3.11 pin mypy refuses
+to parse numpy's own .pyi and aborts before it ever checks supply_chain_risk/.
+
+The error is located in .venv/lib/python3.12/site-packages/numpy/__init__.pyi -- a
+third-party stub -- not in any file under supply_chain_risk/. Overriding the pin to match
+the interpreter actually in use is the correct resolution and leaves strict mode fully on:
+all 8 source files are checked and clean. Systems 1 and 2 are unaffected because neither
+depends on numpy.

@@ -1,0 +1,108 @@
+=== System 2 — DISCREPANCY run: income_sum_mismatch.txt ===
+captured: 2026-09-06T00:01:10Z
+cwd: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution
+
+--- earnings section of the source document ---
+EARNINGS (CURRENT PERIOD - MONTHLY)
+================================================================
+Description              Rate         Hours      Current      YTD
+----------------------------------------------------------------
+Base Salary              -            -        5,416.67   21,666.68
+Commission (Apr Q2)      -            -        2,140.00    7,820.00
+Bonus - Performance      -            -        1,250.00    3,500.00
+Overtime Premium         -            -          385.50    1,142.75
+Auto Allowance (Other)   -            -          450.00    1,800.00
+----------------------------------------------------------------
+TOTAL MONTHLY EARNINGS                         10,892.17   35,929.43
+
+
+PRE-TAX DEDUCTIONS
+================================================================
+Description                            Current        YTD
+----------------------------------------------------------------
+401(k) Traditional (6%)                  325.00     1,300.00
+Medical - BCBS PPO Family                412.18     1,648.72
+Dental - Delta PPO                        38.44       153.76
+Vision - VSP                              11.20        44.80
+HSA Contribution                         150.00       600.00
+----------------------------------------------------------------
+Total Pre-Tax Deductions                 936.82     3,748.04
+
+
+TAXES WITHHELD
+================================================================
+Description                            Current        YTD
+----------------------------------------------------------------
+Federal Income Tax                     1,184.27     4,041.55
+Social Security (OASDI 6.2%)             596.42     2,019.83
+Medicare (1.45%)                         139.46       472.45
+NC State Income Tax                      438.91     1,488.21
+----------------------------------------------------------------
+Total Taxes Withheld                   2,359.06     8,022.04
+
+
+POST-TAX DEDUCTIONS
+================================================================
+Description                            Current        YTD
+----------------------------------------------------------------
+Group Term Life Insurance                 18.50        74.00
+Voluntary AD&D                            12.75        51.00
+United Way Charitable                     25.00       100.00
+----------------------------------------------------------------
+Total Post-Tax Deductions                 56.25       225.00
+
+
+SUMMARY
+================================================================
+Gross Earnings (Monthly)              10,892.17    35,929.43
+Total Deductions                       3,352.13    11,995.08
+----------------------------------------------------------------
+NET PAY                                7,540.04    23,934.35
+
+
+Direct Deposit:  Wells Fargo Bank ****6219     7,540.04
+
+----------------------------------------------------------------
+ADP Processing ID: 26-NC-04471-0501
+This is a system-generated document. Retain for your records.
+================================================================
+
+$ .venv/bin/mortgage-extract fixtures/documents/income_sum_mismatch.txt --mode replay -v
+
+mortgage_extractor.pipeline: classify: model=claude-haiku-4-5-20251001 in=1612 out=96 type=income_verification
+mortgage_extractor.pipeline: extract: model=claude-haiku-4-5-20251001 in=3771 out=199 tool=extract_income_verification
+{
+  "extraction": {
+    "borrower": {
+      "full_name": "Marcus T. Hollingsworth",
+      "coborrower_name": null,
+      "ssn_last4": null,
+      "date_of_birth": null,
+      "email": null,
+      "phone": null
+    },
+    "property": null,
+    "loan": null,
+    "income": {
+      "base_monthly": 5416.67,
+      "bonus_monthly": 1250.0,
+      "bonus_ytd": null,
+      "commission_monthly": 2140.0,
+      "overtime_monthly": 385.5,
+      "other_monthly": 450.0,
+      "stated_monthly_total": 10892.17
+    }
+  },
+  "validation": {
+    "consistent": false,
+    "discrepancies": [
+      {
+        "field": "total_monthly_income",
+        "calculated": 9642.17,
+        "stated": 10892.17,
+        "delta": -1250.0
+      }
+    ]
+  }
+}
+exit=1  (1 = validation reported a discrepancy)

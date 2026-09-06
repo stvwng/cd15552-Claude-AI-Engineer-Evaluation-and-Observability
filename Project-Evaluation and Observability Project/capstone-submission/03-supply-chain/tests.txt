@@ -1,0 +1,151 @@
+=== System 3 (supply-chain-investigate) — test suite ===
+captured: 2026-09-05T22:22:48Z
+cwd: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Investigate Supply Chain Risk with Multi-Source Synthesis/03-resilient-coordinator/solution
+git rev: d5951cc0912a96b409523841280e07b4372a78b5
+
+NOTE: instructions say 'pytest tests/ -q'; using -v so the passing count is explicit per rubric.
+
+--- RUN A: offline (ANTHROPIC_API_KEY unset) ---
+$ .venv/bin/pytest tests/ -v
+
+============================= test session starts ==============================
+platform darwin -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Investigate Supply Chain Risk with Multi-Source Synthesis/03-resilient-coordinator/solution/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Investigate Supply Chain Risk with Multi-Source Synthesis/03-resilient-coordinator/solution
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 34 items
+
+tests/test_coordinator.py::test_logistics_timeout_returns_partial_and_context PASSED [  2%]
+tests/test_coordinator.py::test_coordinator_proceeds_and_annotates_gap PASSED [  5%]
+tests/test_coordinator.py::test_access_failure_distinct_from_empty_result PASSED [  8%]
+tests/test_coordinator.py::test_single_failure_does_not_abort PASSED     [ 11%]
+tests/test_coordinator.py::test_only_successful_claims_vectorized PASSED [ 14%]
+tests/test_coordinator.py::test_healthy_run_is_contested PASSED          [ 17%]
+tests/test_memory.py::test_shared_memory_constructs_offline PASSED       [ 20%]
+tests/test_memory.py::test_provenance_round_trips PASSED                 [ 23%]
+tests/test_memory.py::test_search_retrieves_cross_source_corroborating_claims PASSED [ 26%]
+tests/test_memory.py::test_related_to_excludes_self_and_finds_cross_source PASSED [ 29%]
+tests/test_memory.py::test_deterministic_results PASSED                  [ 32%]
+tests/test_readers.py::test_claim_has_required_fields PASSED             [ 35%]
+tests/test_readers.py::test_claim_requires_source_date PASSED            [ 38%]
+tests/test_readers.py::test_claim_rejects_out_of_range_confidence PASSED [ 41%]
+tests/test_readers.py::test_claim_rejects_unparseable_date PASSED        [ 44%]
+tests/test_readers.py::test_read_audit PASSED                            [ 47%]
+tests/test_readers.py::test_read_logistics PASSED                        [ 50%]
+tests/test_readers.py::test_read_news_extracts_dated_claims PASSED       [ 52%]
+tests/test_readers.py::test_anthropic_extractor_uses_structured_output PASSED [ 55%]
+tests/test_readers.py::test_empty_result_is_ok_not_error PASSED          [ 58%]
+tests/test_readers.py::test_missing_file_is_access_failure PASSED        [ 61%]
+tests/test_readers.py::test_ambiguous_match_sets_needs_identifier PASSED [ 64%]
+tests/test_readers.py::test_read_quality PASSED                          [ 67%]
+tests/test_readers.py::test_all_readers_emit_provenance PASSED           [ 70%]
+tests/test_synthesis.py::test_group_merges_near_duplicate_metrics PASSED [ 73%]
+tests/test_synthesis.py::test_group_keeps_distinct_metrics_separate PASSED [ 76%]
+tests/test_synthesis.py::test_classification PASSED                      [ 79%]
+tests/test_synthesis.py::test_contested_preserves_both_values PASSED     [ 82%]
+tests/test_synthesis.py::test_content_appropriate_rendering PASSED       [ 85%]
+tests/test_synthesis.py::test_escalation_criteria PASSED                 [ 88%]
+tests/test_synthesis.py::test_escalation_ignores_confidence_directly PASSED [ 91%]
+tests/test_synthesis.py::test_three_sections_with_attribution PASSED     [ 94%]
+tests/test_synthesis.py::test_empty_section_renders_none PASSED          [ 97%]
+tests/test_synthesis.py::test_coverage_badges PASSED                     [100%]
+
+============================= 34 passed in 10.35s ==============================
+exit=0
+
+--- RUN B: rerun (determinism check) ---
+
+============================= test session starts ==============================
+platform darwin -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Investigate Supply Chain Risk with Multi-Source Synthesis/03-resilient-coordinator/solution/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Investigate Supply Chain Risk with Multi-Source Synthesis/03-resilient-coordinator/solution
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 34 items
+
+tests/test_coordinator.py::test_logistics_timeout_returns_partial_and_context PASSED [  2%]
+tests/test_coordinator.py::test_coordinator_proceeds_and_annotates_gap PASSED [  5%]
+tests/test_coordinator.py::test_access_failure_distinct_from_empty_result PASSED [  8%]
+tests/test_coordinator.py::test_single_failure_does_not_abort PASSED     [ 11%]
+tests/test_coordinator.py::test_only_successful_claims_vectorized PASSED [ 14%]
+tests/test_coordinator.py::test_healthy_run_is_contested PASSED          [ 17%]
+tests/test_memory.py::test_shared_memory_constructs_offline PASSED       [ 20%]
+tests/test_memory.py::test_provenance_round_trips PASSED                 [ 23%]
+tests/test_memory.py::test_search_retrieves_cross_source_corroborating_claims PASSED [ 26%]
+tests/test_memory.py::test_related_to_excludes_self_and_finds_cross_source PASSED [ 29%]
+tests/test_memory.py::test_deterministic_results PASSED                  [ 32%]
+tests/test_readers.py::test_claim_has_required_fields PASSED             [ 35%]
+tests/test_readers.py::test_claim_requires_source_date PASSED            [ 38%]
+tests/test_readers.py::test_claim_rejects_out_of_range_confidence PASSED [ 41%]
+tests/test_readers.py::test_claim_rejects_unparseable_date PASSED        [ 44%]
+tests/test_readers.py::test_read_audit PASSED                            [ 47%]
+tests/test_readers.py::test_read_logistics PASSED                        [ 50%]
+tests/test_readers.py::test_read_news_extracts_dated_claims PASSED       [ 52%]
+tests/test_readers.py::test_anthropic_extractor_uses_structured_output PASSED [ 55%]
+tests/test_readers.py::test_empty_result_is_ok_not_error PASSED          [ 58%]
+tests/test_readers.py::test_missing_file_is_access_failure PASSED        [ 61%]
+tests/test_readers.py::test_ambiguous_match_sets_needs_identifier PASSED [ 64%]
+tests/test_readers.py::test_read_quality PASSED                          [ 67%]
+tests/test_readers.py::test_all_readers_emit_provenance PASSED           [ 70%]
+tests/test_synthesis.py::test_group_merges_near_duplicate_metrics PASSED [ 73%]
+tests/test_synthesis.py::test_group_keeps_distinct_metrics_separate PASSED [ 76%]
+tests/test_synthesis.py::test_classification PASSED                      [ 79%]
+tests/test_synthesis.py::test_contested_preserves_both_values PASSED     [ 82%]
+tests/test_synthesis.py::test_content_appropriate_rendering PASSED       [ 85%]
+tests/test_synthesis.py::test_escalation_criteria PASSED                 [ 88%]
+tests/test_synthesis.py::test_escalation_ignores_confidence_directly PASSED [ 91%]
+tests/test_synthesis.py::test_three_sections_with_attribution PASSED     [ 94%]
+tests/test_synthesis.py::test_empty_section_renders_none PASSED          [ 97%]
+tests/test_synthesis.py::test_coverage_badges PASSED                     [100%]
+
+============================== 34 passed in 8.16s ==============================
+exit=0
+
+--- RUN C: live (ANTHROPIC_API_KEY set) ---
+
+============================= test session starts ==============================
+platform darwin -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Investigate Supply Chain Risk with Multi-Source Synthesis/03-resilient-coordinator/solution/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Investigate Supply Chain Risk with Multi-Source Synthesis/03-resilient-coordinator/solution
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 34 items
+
+tests/test_coordinator.py::test_logistics_timeout_returns_partial_and_context PASSED [  2%]
+tests/test_coordinator.py::test_coordinator_proceeds_and_annotates_gap PASSED [  5%]
+tests/test_coordinator.py::test_access_failure_distinct_from_empty_result PASSED [  8%]
+tests/test_coordinator.py::test_single_failure_does_not_abort PASSED     [ 11%]
+tests/test_coordinator.py::test_only_successful_claims_vectorized PASSED [ 14%]
+tests/test_coordinator.py::test_healthy_run_is_contested PASSED          [ 17%]
+tests/test_memory.py::test_shared_memory_constructs_offline PASSED       [ 20%]
+tests/test_memory.py::test_provenance_round_trips PASSED                 [ 23%]
+tests/test_memory.py::test_search_retrieves_cross_source_corroborating_claims PASSED [ 26%]
+tests/test_memory.py::test_related_to_excludes_self_and_finds_cross_source PASSED [ 29%]
+tests/test_memory.py::test_deterministic_results PASSED                  [ 32%]
+tests/test_readers.py::test_claim_has_required_fields PASSED             [ 35%]
+tests/test_readers.py::test_claim_requires_source_date PASSED            [ 38%]
+tests/test_readers.py::test_claim_rejects_out_of_range_confidence PASSED [ 41%]
+tests/test_readers.py::test_claim_rejects_unparseable_date PASSED        [ 44%]
+tests/test_readers.py::test_read_audit PASSED                            [ 47%]
+tests/test_readers.py::test_read_logistics PASSED                        [ 50%]
+tests/test_readers.py::test_read_news_extracts_dated_claims PASSED       [ 52%]
+tests/test_readers.py::test_anthropic_extractor_uses_structured_output PASSED [ 55%]
+tests/test_readers.py::test_empty_result_is_ok_not_error PASSED          [ 58%]
+tests/test_readers.py::test_missing_file_is_access_failure PASSED        [ 61%]
+tests/test_readers.py::test_ambiguous_match_sets_needs_identifier PASSED [ 64%]
+tests/test_readers.py::test_read_quality PASSED                          [ 67%]
+tests/test_readers.py::test_all_readers_emit_provenance PASSED           [ 70%]
+tests/test_synthesis.py::test_group_merges_near_duplicate_metrics PASSED [ 73%]
+tests/test_synthesis.py::test_group_keeps_distinct_metrics_separate PASSED [ 76%]
+tests/test_synthesis.py::test_classification PASSED                      [ 79%]
+tests/test_synthesis.py::test_contested_preserves_both_values PASSED     [ 82%]
+tests/test_synthesis.py::test_content_appropriate_rendering PASSED       [ 85%]
+tests/test_synthesis.py::test_escalation_criteria PASSED                 [ 88%]
+tests/test_synthesis.py::test_escalation_ignores_confidence_directly PASSED [ 91%]
+tests/test_synthesis.py::test_three_sections_with_attribution PASSED     [ 94%]
+tests/test_synthesis.py::test_empty_section_renders_none PASSED          [ 97%]
+tests/test_synthesis.py::test_coverage_badges PASSED                     [100%]
+
+============================== 34 passed in 7.42s ==============================
+exit=0

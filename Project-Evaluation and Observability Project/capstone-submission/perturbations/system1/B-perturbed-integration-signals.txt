@@ -1,0 +1,17 @@
+document: POL-2025-001-endorsement-exceeds-coverage.txt
+
+extracted coverage_limit = 100000
+extracted endorsements   = [('Rental Reimbursement Endorsement (AU-21)', None), ('Excess Liability Endorsement (AU-90)', 750000), ('Roadside Assistance Coverage (AU-44)', None), ('Additional Insured: Anywhere Auto Leasing LLC', None)]
+
+--- integration checks ---
+  [FAIL] coverage_limit_exceeds_endorsement_sum: coverage_limit=100000 is less than the sum of endorsement limits (750000). The primary coverage cannot be smaller than what the endorsements promise.
+  [PASS] endorsements_exclusions_non_contradiction: No overlapping noun-phrases between endorsements and exclusions.
+
+--- ROUTING SIGNALS ---
+  confidence  : fields_below_threshold = []
+  reviewer    : disagreements          = ['coverage_limit', 'deductible', 'endorsements']
+  integration : failures               = ['coverage_limit_exceeds_endorsement_sum']
+
+  SIGNALS FIRED : ['reviewer', 'integration']
+  DECISION      : human_review
+  REASON        : reviewer_disagreement=['coverage_limit', 'deductible', 'endorsements']; integration_failure=['coverage_limit_exceeds_endorsement_sum']

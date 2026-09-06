@@ -1,0 +1,27 @@
+SIGNAL DOMINANCE ANALYSIS — from the learner's own live routing output
+source: 01-policy-pipeline/routing_decisions.json (9 routed records)
+
+signal        records where it fired   rate
+----------------------------------------------------
+confidence      1 / 9                    11%
+reviewer        8 / 9                    89%
+integration     0 / 9                    0%
+
+--- counterfactual: what if we removed ONE signal? ---
+A record still goes to human_review if ANY remaining signal fires.
+
+configuration                           human_review   auto_approve-eligible
+----------------------------------------------------------------------------
+all three signals (as shipped)                     8                       1
+without confidence                                 8                       1
+without reviewer                                   1                       8
+without integration                                8                       1
+
+confidence ALONE                                   1                       8
+reviewer ALONE                                     8                       1
+integration ALONE                                  0                       9
+
+--- records where the reviewer was the ONLY signal ---
+7 of 9: ['POL-2025-002', 'POL-2025-003', 'POL-2025-004', 'POL-2025-005', 'POL-2025-006', 'POL-2025-008', 'POL-2025-010']
+
+These are exactly the records a confidence-only router would have auto-approved.

@@ -1,0 +1,93 @@
+=== System 1 — determinism experiment: separating the router, the sampler, and the model ===
+captured: 2026-09-05T22:30:38Z
+
+The pipeline has three sources of run-to-run behaviour. This experiment separates them,
+because confounding them is the easiest way to draw a wrong conclusion about determinism.
+
+  1. route_extraction        — a PURE FUNCTION of (confidence, reviewer, integration).
+  2. apply_stratified_spot_check — stochastic, but seeded and therefore reproducible.
+  3. the model itself        — the extractor and reviewer are live LLM calls; NOT deterministic.
+
+======================================================================================
+PART 1 — Two identical live runs, identical --seed 42
+======================================================================================
+$ .venv/bin/policy-extractor pipeline data/policies/ --routing-out run1-seed42.json --spot-check-pct 0.1 --seed 42
+$ .venv/bin/policy-extractor pipeline data/policies/ --routing-out run2-seed42.json --spot-check-pct 0.1 --seed 42
+
+RUN 1 vs RUN 2 — identical command, identical --seed 42, live API
+
+policy_id        run1 decision  run2 decision  run1 reviewer disagreements            run2 reviewer disagreements
+--------------------------------------------------------------------------------------------------------------------------------------------
+POL-2025-001     human_review   human_review   ['coverage_limit', 'deductible', 'endorsements'] ['coverage_limit', 'endorsements']
+POL-2025-002     human_review   human_review   ['coverage_limit', 'deductible', 'endorsements'] ['coverage_limit', 'deductible']
+POL-2025-003     human_review   human_review   ['coverage_limit']                     ['coverage_limit']
+POL-2025-004     human_review   human_review   ['coverage_limit', 'deductible']       ['coverage_limit', 'deductible']
+POL-2025-005     human_review   human_review   ['coverage_limit', 'deductible', 'endorsements'] ['coverage_limit', 'deductible', 'endorsements']
+POL-2025-006     human_review   human_review   ['deductible']                         ['deductible']
+POL-2025-007     spot_check     human_review   []                                     ['deductible']   <-- DIFFERS
+POL-2025-008     human_review   human_review   ['policy_type']                        ['policy_type']
+POL-2025-010     human_review   human_review   ['coverage_limit']                     ['premium_amount']
+
+decisions identical across the two live runs: False
+records whose decision changed: ['POL-2025-007']
+run1: auto_approve=0 human_review=8 spot_check=1
+run2: auto_approve=0 human_review=9 spot_check=0
+
+FINDING. Same command, same seed, same corpus — and one record (POL-2025-007) changed
+decision from spot_check to human_review. The seed did not change. The router did not
+change. What changed is the REVIEWER's judgment: in run 1 it agreed on every field; in
+run 2 it flagged 'deductible'. POL-2025-010 likewise moved its disagreement from
+'coverage_limit' to 'premium_amount' without changing its decision.
+
+This is the single most important observability lesson in the pack: a deterministic
+router sitting on top of a nondeterministic signal is only as reproducible as its inputs.
+Auditing 'why was this routed here' requires logging the SIGNAL VALUES at decision time,
+not just the decision — which is exactly what the 'reason' field in routing_decisions.json
+records. Re-deriving the reason later would give a different answer.
+
+======================================================================================
+PART 2 — Controlled probe of the sampler alone (no API, no model variance)
+======================================================================================
+$ .venv/bin/python sampler_probe.py    (full output in sampler-seed-probe.txt)
+
+synthetic decision set: 36 auto_approve records
+strata sizes: {'auto': 20, 'home': 12, 'umbrella': 3, 'other': 1}
+
+=== A. Seed determinism: same seed => same selection ===
+seed=42 (1st): ['AUTO-000', 'AUTO-003', 'HOME-004', 'HOME-011', 'OTHER-000', 'UMBRELLA-000']
+seed=42 (2nd): ['AUTO-000', 'AUTO-003', 'HOME-004', 'HOME-011', 'OTHER-000', 'UMBRELLA-000']
+seed=42 reproduces byte-for-byte: True
+seed=7       : ['AUTO-004', 'AUTO-010', 'HOME-006', 'HOME-010', 'OTHER-000', 'UMBRELLA-000']
+seed=99      : ['AUTO-012', 'AUTO-019', 'HOME-003', 'HOME-009', 'OTHER-000', 'UMBRELLA-000']
+seed 7 differs from seed 42 (the seed genuinely drives selection): True
+
+=== B. Stratum preservation: no stratum with eligible records is ever dropped ===
+stratum      n  naive floor(10%)  ceil(10%) shipped  actually picked
+-- seed=42
+auto        20                 2                  2                2
+home        12                 1                  2                2
+umbrella     3                 0                  1                1
+other        1                 0                  1                1
+   strata with zero coverage: NONE
+-- seed=7
+auto        20                 2                  2                2
+home        12                 1                  2                2
+umbrella     3                 0                  1                1
+other        1                 0                  1                1
+   strata with zero coverage: NONE
+-- seed=99
+auto        20                 2                  2                2
+home        12                 1                  2                2
+umbrella     3                 0                  1                1
+other        1                 0                  1                1
+   strata with zero coverage: NONE
+
+=== C. Why this matters ===
+Under naive floor(10%) sampling, 'umbrella' (n=3) and 'other' (n=1) sample ZERO records —
+the two rarest policy types would never be audited, which is precisely where model drift
+hides. The shipped max(1, ceil(...)) rule guarantees every non-empty stratum is covered.
+
+CONCLUSION. With the model held out of the loop, the sampler is exactly reproducible
+(seed 42 twice => identical selection) and genuinely seed-driven (seed 7 => different
+selection). Combined with Part 1, the picture is unambiguous: components 1 and 2 are
+reproducible; component 3 is not, and that is where run-to-run variance actually enters.

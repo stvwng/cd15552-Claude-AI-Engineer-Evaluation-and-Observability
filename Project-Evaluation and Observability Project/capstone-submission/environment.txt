@@ -1,0 +1,245 @@
+======================================================================
+ ENVIRONMENT NOTE — Evaluation & Observability Capstone
+======================================================================
+captured: 2026-09-05T22:25:01Z (UTC)
+local date: 2026-09-05 18:25:01 EDT
+
+--- Operating system ---
+ProductName:		macOS
+ProductVersion:		26.5.2
+BuildVersion:		25F84
+
+Darwin mac.lan 25.5.0 Darwin Kernel Version 25.5.0: Tue Jun  9 22:19:21 PDT 2026; root:xnu-12377.121.10~1/RELEASE_ARM64_T8122 arm64
+
+--- Python ---
+$ python3 --version
+Python 3.12.3
+$ which python3
+/Users/stevenwang/.pyenv/shims/python3
+
+--- Source revision under test ---
+repo: cd15552 Claude AI Engineer Evaluation and Observability
+git rev-parse HEAD: d5951cc0912a96b409523841280e07b4372a78b5
+git branch:         main
+git describe:       d5951cc Fix lesson 2 shared-memory retrieval and briefing synthesis
+
+--- API access ---
+ANTHROPIC_API_KEY: SET (live runs were performed; see live-vs-replay artifacts)
+Every system was ALSO exercised offline with the key unset, so the pack contains both paths.
+
+======================================================================
+ VENV SETUP — one venv per final-exercise solution/ directory
+======================================================================
+All three were created identically:
+
+  cd "<solution dir>"
+  python3 -m venv .venv
+  .venv/bin/pip install --upgrade pip
+  .venv/bin/pip install -e ".[dev]"
+
+System 1  policy-extractor           /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Validated, Routed Insurance Policy Extraction Pipeline/04-hitl-routing/solution
+System 2  mortgage-extract           /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution
+System 3  supply-chain-investigate   /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Investigate Supply Chain Risk with Multi-Source Synthesis/03-resilient-coordinator/solution
+
+System 3 additionally downloads the local sentence-transformers embedding model
+'all-MiniLM-L6-v2' (384 dims, ~90 MB) on first use. It was warmed once before the
+timed runs so that capture timings reflect compute, not a one-off download.
+
+--- Tool versions (identical across all three venvs) ---
+pytest 9.1.1
+mypy 2.3.1 (compiled: yes)
+ruff 0.16.6
+
+======================================================================
+ TEST COUNTS OBSERVED
+======================================================================
+System 1  45 passed,  3 skipped  (offline)   /  48 passed (live: the 3 @pytest.mark.live tests run)
+System 2  25 passed                          /  25 passed (live; suite has no live-marked tests)
+System 3  34 passed                          /  34 passed (live)
+
+Note: the System 2 solution README states '28 acceptance tests'; the suite as shipped
+collects and passes 25. Counts above are what the runs actually produced. See
+02-mortgage-extraction/tests.txt for the --collect-only evidence.
+
+Note: the System 3 mypy invocation needs --python-version 3.12 on this machine due to a
+third-party numpy stub, not project code. Full diagnosis in 03-supply-chain/static-checks.txt.
+
+======================================================================
+ APPENDIX 1 — pip freeze : 04-hitl-routing/solution
+======================================================================
+annotated-types==0.8.0
+anthropic==1.4.0
+anyio==4.15.1
+ast_serialize==0.9.0
+docstring_parser==0.18.0
+h11==0.16.0
+httpcore2==2.12.0
+httpx2==2.12.0
+idna==3.19
+iniconfig==2.3.0
+jiter==0.16.0
+librt==0.15.0
+mypy==2.3.1
+mypy_extensions==1.1.0
+packaging==26.3
+pathspec==1.1.1
+pluggy==1.6.0
+-e git+https://github.com/udacity/cd15552-Claude-AI-Engineer-Evaluation-and-Observability.git@d5951cc0912a96b409523841280e07b4372a78b5#egg=policy_extractor&subdirectory=Build a Validated, Routed Insurance Policy Extraction Pipeline/04-hitl-routing/solution
+pydantic==2.13.5
+pydantic_core==2.46.5
+Pygments==2.21.0
+pytest==9.1.1
+pytest-asyncio==1.4.0
+ruff==0.16.6
+sniffio==1.3.1
+truststore==0.10.4
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+
+======================================================================
+ APPENDIX 2 — pip freeze : 04-validate-mathematical-consistency/solution
+======================================================================
+annotated-types==0.8.0
+anthropic==1.4.0
+anyio==4.15.1
+ast_serialize==0.9.0
+docstring_parser==0.18.0
+h11==0.16.0
+httpcore2==2.12.0
+httpx2==2.12.0
+idna==3.19
+iniconfig==2.3.0
+jiter==0.16.0
+librt==0.15.0
+-e git+https://github.com/udacity/cd15552-Claude-AI-Engineer-Evaluation-and-Observability.git@d5951cc0912a96b409523841280e07b4372a78b5#egg=mortgage_document_extraction_system&subdirectory=Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution
+mypy==2.3.1
+mypy_extensions==1.1.0
+packaging==26.3
+pathspec==1.1.1
+pluggy==1.6.0
+pydantic==2.13.5
+pydantic_core==2.46.5
+Pygments==2.21.0
+pytest==9.1.1
+ruff==0.16.6
+sniffio==1.3.1
+truststore==0.10.4
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+
+======================================================================
+ APPENDIX 3 — pip freeze : 03-resilient-coordinator/solution
+======================================================================
+aiohappyeyeballs==2.7.1
+aiohttp==3.14.3
+aiosignal==1.4.0
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anthropic==1.4.0
+anyio==4.15.1
+ast_serialize==0.9.0
+attrs==26.1.0
+bcrypt==5.0.0
+build==1.6.0
+certifi==2026.7.22
+charset-normalizer==3.5.1
+chromadb==1.5.9
+click==8.5.0
+cloudpickle==3.1.2
+docstring_parser==0.18.0
+durationpy==0.11
+filelock==3.32.5
+flatbuffers==25.12.19
+frozenlist==1.8.0
+fsspec==2026.7.0
+googleapis-common-protos==1.75.3
+grpcio==1.83.1
+h11==0.16.0
+hf-xet==1.6.0
+httpcore==1.0.9
+httpcore2==2.12.0
+httptools==0.8.0
+httpx==0.28.1
+httpx2==2.12.0
+huggingface_hub==1.30.0
+idna==3.19
+importlib_resources==7.1.0
+iniconfig==2.3.0
+Jinja2==3.1.6
+jiter==0.16.0
+joblib==1.6.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+kubernetes==36.0.3
+librt==0.15.0
+markdown-it-py==4.2.0
+MarkupSafe==3.0.3
+mdurl==0.1.2
+mmh3==5.3.0
+mpmath==1.3.0
+multidict==6.7.1
+mypy==2.3.1
+mypy_extensions==1.1.0
+narwhals==2.25.0
+networkx==3.6.1
+numpy==2.5.2
+oauthlib==3.3.1
+onnxruntime==1.29.0
+opentelemetry-api==1.44.0
+opentelemetry-exporter-otlp-proto-common==1.44.0
+opentelemetry-exporter-otlp-proto-grpc==1.44.0
+opentelemetry-proto==1.44.0
+opentelemetry-sdk==1.44.0
+opentelemetry-semantic-conventions==0.65b0
+orjson==3.12.0
+overrides==7.7.0
+packaging==26.3
+pathspec==1.1.1
+pluggy==1.6.0
+propcache==0.5.2
+protobuf==7.36.1
+pybase64==1.5.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+pydantic_core==2.46.5
+Pygments==2.21.0
+PyPika==0.51.1
+pyproject_hooks==1.2.0
+pytest==9.1.1
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.3
+PyYAML==6.0.3
+referencing==0.37.0
+regex==2026.9.3
+requests==2.34.2
+requests-oauthlib==2.0.0
+rich==15.0.0
+rpds-py==2026.6.3
+ruff==0.16.6
+safetensors==0.8.0
+scikit-learn==1.9.0
+scipy==1.18.1
+sentence-transformers==6.0.1
+setuptools==84.0.0
+shellingham==1.5.4
+six==1.17.0
+sniffio==1.3.1
+-e git+https://github.com/udacity/cd15552-Claude-AI-Engineer-Evaluation-and-Observability.git@d5951cc0912a96b409523841280e07b4372a78b5#egg=supply_chain_risk_investigation&subdirectory=Investigate Supply Chain Risk with Multi-Source Synthesis/03-resilient-coordinator/solution
+sympy==1.14.0
+tenacity==9.1.4
+threadpoolctl==3.6.0
+tokenizers==0.23.2
+torch==2.14.0
+tqdm==4.70.0
+transformers==5.16.1
+truststore==0.10.4
+typer==0.27.2
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+urllib3==2.7.0
+uvicorn==0.52.4
+uvloop==0.22.1
+watchfiles==1.2.0
+websocket-client==1.9.2
+websockets==17.1
+yarl==1.24.5

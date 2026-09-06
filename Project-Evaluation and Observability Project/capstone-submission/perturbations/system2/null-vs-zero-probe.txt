@@ -1,0 +1,28 @@
+A. No income components at all (an appraisal, say) — the shipped behaviour
+   calculated_monthly_total = None   <- None, not 0.0
+   stated_monthly_total     = None
+   validate() -> consistent=True, discrepancies=[]
+   The validator's guard `if calculated is not None and stated is not None` short-circuits.
+   Nothing is compared, because there is nothing to compare.
+
+B. What would happen if the property returned 0.0 instead of None
+   Simulating that by setting the components to zero explicitly:
+   calculated_monthly_total = 0.0
+   validate() -> consistent=True
+   This reports 'consistent' too — but for the WRONG REASON: it actively compared
+   0.0 against 0.0 and found them equal. A document that genuinely failed to extract
+   any income would be indistinguishable from one that legitimately has none.
+
+C. The case the None design protects: components present, stated absent
+   calculated_monthly_total = 5416.67
+   stated_monthly_total     = None
+   validate() -> consistent=True
+   Also skipped — the document never stated a total, so there is no claim to check
+   against. The validator refuses to invent a comparison, exactly as the extractor
+   refuses to invent a value.
+
+D. Same-unit invariant: only *_monthly components enter the sum
+   base_monthly=5416.67 bonus_monthly=1250.0 bonus_ytd=3500.0
+   calculated_monthly_total = 6666.67
+   = 5416.67 + 1250.0 only. bonus_ytd is a YEAR-TO-DATE figure and is excluded;
+   adding it would produce a number in no coherent unit at all.

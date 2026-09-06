@@ -1,0 +1,69 @@
+CONFLICT-DETECTION THRESHOLD SWEEP — System 3
+
+Perturbation: data/meridian/audit.json, metric on_time_delivery_rate, "value": 95
+is rewritten to each value below. The logistics reader is untouched and always
+derives 78% from data/meridian/logistics.csv (39 on-time of 50 shipments).
+Everything runs --offline so the news reader cannot add variance.
+
+PREDICTION (from synthesis.py before running):
+  REL_TOL = 0.10 and _disagree() computes (hi-lo)/max(|lo|,|hi|) > 0.10.
+  With lo fixed at 78 and hi = audit value X, the metric should be CONTESTED when
+  (X-78)/X > 0.10  =>  0.90X > 78  =>  X > 86.67.
+  So: contested above 86.67, corroborated at or below it.
+
+audit     logistics rel.diff    SECTION        coverage badge / escalation
+-------   --------- ---------   -------------  -------------------------------
+78        78        0.0000      Well-Established corroborated across 2 sources 
+82        78        0.0488      Well-Established corroborated across 2 sources 
+85        78        0.0824      Well-Established corroborated across 2 sources 
+86        78        0.0930      Well-Established corroborated across 2 sources 
+86.6      78        0.0993      Well-Established corroborated across 2 sources 
+86.7      78        0.1003      Contested      2 sources, conflicting ESCALATE
+87        78        0.1034      Contested      2 sources, conflicting ESCALATE
+90        78        0.1333      Contested      2 sources, conflicting ESCALATE
+95        78        0.1789      Contested      2 sources, conflicting ESCALATE
+
+RESULT: prediction confirmed exactly. The flip occurs between audit=86.6
+(rel.diff 0.0993 -> corroborated) and audit=86.7 (rel.diff 0.1003 -> contested),
+bracketing the predicted 86.67 boundary.
+
+WHAT THIS REVEALS THAT THE UNPERTURBED RUN DOES NOT
+---------------------------------------------------
+On unperturbed input, on_time_delivery_rate is simply 'Contested' with 95 vs 78.
+You cannot tell from that whether the system detects conflict by exact inequality,
+by an absolute threshold, or by a relative one — nor how close two values may be
+before the disagreement stops being reported. The sweep answers all three:
+
+  * The test is RELATIVE, not absolute. An 8.6-point gap (95 vs 86.4) would be
+    contested, while an 8.6-point gap at the low end (86.6 vs 78) is not, because
+    the denominator is the larger value.
+  * The tolerance is 10% of the LARGER value, so the band is asymmetric. Sources
+    reporting 78 and 86.6 are called 'corroborated' despite an 8.6-point spread on
+    a metric where a single point of on-time delivery is operationally meaningful.
+  * Escalation is downstream of classification. The ESCALATE flag appears and
+    disappears with the section, because _escalation() fires on
+    (metric in HIGH_IMPACT and classification == CONTESTED). Nothing about the
+    magnitude of the disagreement is consulted, only the boolean.
+
+THE OPERATIONAL POINT
+---------------------
+A supplier reporting 86% against our measured 78% would be silently filed as
+'Well-Established, corroborated across 2 sources' — the same badge the briefing
+gives a metric where both sources genuinely agree. The 8-point gap is not shown,
+not flagged, and not escalated. A reader has no way to distinguish 'both sources
+said 78' from 'sources said 78 and 86.6, which we decided was close enough'.
+
+A single relative tolerance is doing double duty here: absorbing measurement noise
+AND deciding what counts as a business-relevant disagreement. Those are different
+questions, and 10% is a defensible answer to the first but a poor one to the second
+for a service-level metric. The fix is per-metric tolerances (on-time delivery might
+warrant 2%, defect-rate ppm might warrant 20%), plus rendering the spread even when
+the metric is classified as corroborated, so 'close enough' remains visible.
+
+CONTRAST WITH THE UNPERTURBED RUN
+---------------------------------
+unperturbed (audit=95):  Contested, '2 sources, conflicting', ESCALATE,
+                         both values printed with source and date.
+perturbed  (audit=86.6): Well-Established, 'corroborated across 2 sources',
+                         no escalation, and the briefing's summary table prints a
+                         SINGLE value — the disagreement disappears entirely.

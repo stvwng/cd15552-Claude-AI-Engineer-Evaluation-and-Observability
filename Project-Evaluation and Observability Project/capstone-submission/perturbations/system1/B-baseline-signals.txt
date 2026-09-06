@@ -1,0 +1,17 @@
+document: POL-2025-001.txt
+
+extracted coverage_limit = 100000
+extracted endorsements   = [('Rental Reimbursement Endorsement (AU-21)', 40), ('Roadside Assistance Coverage (AU-44)', None), ('Additional Insured: Anywhere Auto Leasing LLC', None)]
+
+--- integration checks ---
+  [PASS] coverage_limit_exceeds_endorsement_sum: coverage_limit=100000 >= sum(endorsement.limit)=40.
+  [PASS] endorsements_exclusions_non_contradiction: No overlapping noun-phrases between endorsements and exclusions.
+
+--- ROUTING SIGNALS ---
+  confidence  : fields_below_threshold = []
+  reviewer    : disagreements          = ['coverage_limit', 'deductible']
+  integration : failures               = []
+
+  SIGNALS FIRED : ['reviewer']
+  DECISION      : human_review
+  REASON        : reviewer_disagreement=['coverage_limit', 'deductible']

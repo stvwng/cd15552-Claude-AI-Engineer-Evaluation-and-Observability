@@ -1,0 +1,8 @@
+{
+  "category": "missing_source",
+  "detected_pattern": "premium_amount_absent",
+  "field": "premium_amount",
+  "kind": "escalation",
+  "policy_id": "POL-2025-001-PERTURBED",
+  "reason": "Field 'premium_amount' returned null \u2014 the source document does not contain this information. Retry is futile; escalate to human review."
+}

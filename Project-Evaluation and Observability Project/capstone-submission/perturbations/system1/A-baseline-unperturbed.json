@@ -1,0 +1,39 @@
+{
+  "confidence": {
+    "coverage_limit": 0.95,
+    "deductible": 1.0,
+    "endorsements": 0.95,
+    "exclusions": 1.0,
+    "policy_type": 1.0,
+    "premium_amount": 1.0
+  },
+  "coverage_limit": 100000,
+  "deductible": 500,
+  "endorsements": [
+    {
+      "limit": 40,
+      "name": "Rental Reimbursement Endorsement (AU-21)"
+    },
+    {
+      "limit": null,
+      "name": "Roadside Assistance Coverage (AU-44)"
+    },
+    {
+      "limit": null,
+      "name": "Additional Insured: Anywhere Auto Leasing LLC"
+    }
+  ],
+  "exclusions": [
+    "Racing or speed contest activity",
+    "Use of vehicle for ride-share / TNC purposes without endorsement",
+    "Intentional acts by the insured"
+  ],
+  "final_attempt_index": 0,
+  "kind": "extraction",
+  "policy_id": "POL-2025-001",
+  "policy_type": "auto",
+  "premium_amount": 1847.62,
+  "premium_components": null,
+  "retry_count": 0,
+  "validation_history": []
+}

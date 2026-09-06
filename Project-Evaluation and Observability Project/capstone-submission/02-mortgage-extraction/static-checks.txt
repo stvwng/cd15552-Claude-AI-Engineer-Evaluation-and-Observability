@@ -1,0 +1,14 @@
+=== System 2 (mortgage-extract) — static analysis ===
+captured: 2026-09-05T22:21:56Z
+cwd: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution
+
+$ .venv/bin/mypy mortgage_extractor/
+Success: no issues found in 11 source files
+exit=0
+
+$ .venv/bin/ruff check mortgage_extractor/ tests/
+All checks passed!
+exit=0
+
+mypy 2.3.1 (compiled: yes)
+ruff 0.16.6

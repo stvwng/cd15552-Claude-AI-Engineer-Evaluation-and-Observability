@@ -1,0 +1,42 @@
+=== System 2 — missing-field run: income_missing_bonus.txt ===
+captured: 2026-09-06T00:00:58Z
+cwd: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Resilient Mortgage Document Extraction System/04-validate-mathematical-consistency/solution
+
+--- the relevant part of the source document (note: NO bonus line exists) ---
+36: Federal Income Tax                       854.41    8,244.36
+39: OH State Income Tax                      183.65    1,772.18
+42: TOTAL TAXES                            1,613.88   15,573.18
+50: TOTAL DEDUCTIONS                         501.28    5,054.61
+
+$ .venv/bin/mortgage-extract fixtures/documents/income_missing_bonus.txt --mode replay -v
+
+mortgage_extractor.pipeline: classify: model=claude-haiku-4-5-20251001 in=1536 out=97 type=income_verification
+mortgage_extractor.pipeline: extract: model=claude-haiku-4-5-20251001 in=3695 out=190 tool=extract_income_verification
+{
+  "extraction": {
+    "borrower": {
+      "full_name": "Daniel R. Whitfield",
+      "coborrower_name": null,
+      "ssn_last4": null,
+      "date_of_birth": null,
+      "email": null,
+      "phone": null
+    },
+    "property": null,
+    "loan": null,
+    "income": {
+      "base_monthly": 5673.08,
+      "bonus_monthly": null,
+      "bonus_ytd": null,
+      "commission_monthly": null,
+      "overtime_monthly": null,
+      "other_monthly": null,
+      "stated_monthly_total": null
+    }
+  },
+  "validation": {
+    "consistent": true,
+    "discrepancies": []
+  }
+}
+exit=0  (0 = validation consistent)

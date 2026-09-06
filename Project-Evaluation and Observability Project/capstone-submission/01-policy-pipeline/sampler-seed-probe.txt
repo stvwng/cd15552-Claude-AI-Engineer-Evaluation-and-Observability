@@ -1,0 +1,36 @@
+synthetic decision set: 36 auto_approve records
+strata sizes: {'auto': 20, 'home': 12, 'umbrella': 3, 'other': 1}
+
+=== A. Seed determinism: same seed => same selection ===
+seed=42 (1st): ['AUTO-000', 'AUTO-003', 'HOME-004', 'HOME-011', 'OTHER-000', 'UMBRELLA-000']
+seed=42 (2nd): ['AUTO-000', 'AUTO-003', 'HOME-004', 'HOME-011', 'OTHER-000', 'UMBRELLA-000']
+seed=42 reproduces byte-for-byte: True
+seed=7       : ['AUTO-004', 'AUTO-010', 'HOME-006', 'HOME-010', 'OTHER-000', 'UMBRELLA-000']
+seed=99      : ['AUTO-012', 'AUTO-019', 'HOME-003', 'HOME-009', 'OTHER-000', 'UMBRELLA-000']
+seed 7 differs from seed 42 (the seed genuinely drives selection): True
+
+=== B. Stratum preservation: no stratum with eligible records is ever dropped ===
+stratum      n  naive floor(10%)  ceil(10%) shipped  actually picked
+-- seed=42
+auto        20                 2                  2                2
+home        12                 1                  2                2
+umbrella     3                 0                  1                1
+other        1                 0                  1                1
+   strata with zero coverage: NONE
+-- seed=7
+auto        20                 2                  2                2
+home        12                 1                  2                2
+umbrella     3                 0                  1                1
+other        1                 0                  1                1
+   strata with zero coverage: NONE
+-- seed=99
+auto        20                 2                  2                2
+home        12                 1                  2                2
+umbrella     3                 0                  1                1
+other        1                 0                  1                1
+   strata with zero coverage: NONE
+
+=== C. Why this matters ===
+Under naive floor(10%) sampling, 'umbrella' (n=3) and 'other' (n=1) sample ZERO records —
+the two rarest policy types would never be audited, which is precisely where model drift
+hides. The shipped max(1, ceil(...)) rule guarantees every non-empty stratum is covered.

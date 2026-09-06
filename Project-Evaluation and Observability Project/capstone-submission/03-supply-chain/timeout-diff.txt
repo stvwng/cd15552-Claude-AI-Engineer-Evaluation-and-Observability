@@ -1,0 +1,125 @@
+==============================================================================
+ System 3 — what actually changes when a source goes dark
+==============================================================================
+captured: 2026-09-06T00:04:46Z
+$ diff briefing.md briefing-timeout.md      ( '<' = normal run, '>' = timeout run )
+
+2a3,4
+> > Sources unavailable: logistics unavailable (timeout)
+> 
+4c6
+< ### average_lead_time_days  _[corroborated across 2 sources]_
+---
+> ### average_lead_time_days  _[single source only]_
+7d8
+<     - 12.0 days — logistics (as of 2026-04-05)
+9,12d9
+< | Metric | Value | As of | Source |
+< | --- | --- | --- | --- |
+< | average_lead_time_days | 12.0 days | 2026-04-05 | logistics |
+< 
+25c22
+< ### late_shipment_count  _[single source only]_
+---
+> ### on_time_delivery_rate  _[single source only]_
+27c24
+<     - 11.0 shipments — logistics (as of 2026-04-05)
+---
+>     - 95.0 percent — supplier_audit (as of 2026-04-10)
+29,32d25
+< | Metric | Value | As of | Source |
+< | --- | --- | --- | --- |
+< | late_shipment_count | 11.0 shipments | 2026-04-05 | logistics |
+< 
+42,46c35
+< ### on_time_delivery_rate  _[2 sources, conflicting]_  ⚠️ ESCALATE
+< - escalation: high-impact metric is contested across sources
+< - Reported values by source:
+<     - 95.0 percent — supplier_audit (as of 2026-04-10)
+<     - 78.0 percent — logistics (as of 2026-04-05)
+---
+> _none_
+48,52d36
+< | Metric | Value | As of | Source |
+< | --- | --- | --- | --- |
+< | on_time_delivery_rate | 78.0 percent | 2026-04-05 | logistics |
+< 
+< 
+53a38,40
+> ### late_shipment_count  _[missing source: timeout reading logistics]_
+> - missing source: timeout reading logistics
+> 
+
+==============================================================================
+ METRIC-BY-METRIC: which section each metric landed in
+==============================================================================
+metric                             NORMAL run                                 TIMEOUT run
+---------------------------------- ------------------------------------------ ------------------------------------------
+average_lead_time_days             Well-Established [corroborated, 2 sources] Well-Established [single source only]
+late_shipment_count                Well-Established [single source only]      Incomplete [missing source: timeout]
+on_time_delivery_rate              Contested [2 sources, conflicting] ESCALATE Well-Established [single source only]
+
+==============================================================================
+ FOUR DISTINCT DEGRADATION BEHAVIOURS
+==============================================================================
+
+1. THE RUN FINISHES. Exit 0, a complete briefing. One dead source does not cost
+   you the other three. Aborting would throw away the audit, quality and news
+   findings, which are unaffected by a logistics outage.
+
+2. THE OUTAGE IS STATED AT THE TOP, NOT INFERRED:
+       > Sources unavailable: logistics unavailable (timeout)
+   A reader is told what they are NOT seeing, which is the difference between a
+   partial briefing and a misleading one.
+
+3. 'UNREACHABLE' IS NOT 'NOTHING TO REPORT'. late_shipment_count drops into
+   Incomplete carrying its cause:
+       ### late_shipment_count  _[missing source: timeout reading logistics]_
+   Compare the other Incomplete entry, which failed for a different reason:
+       ### production_capacity_utilization  _[missing source: no source reported this metric]_
+   Same section, different annotation. 'We could not ask' and 'we asked and nobody
+   knew' are different operational problems: the first is retryable, the second is a
+   coverage gap that needs a new source. Collapsing them into one 'missing' state
+   would lose the only information that tells you which action to take.
+
+4. CORROBORATION IS LOST, NOT FAKED. average_lead_time_days keeps its 12.0-day
+   value but is demoted from '[corroborated across 2 sources]' to '[single source
+   only]'. The number did not change; the CONFIDENCE IN IT did, and the briefing
+   says so.
+
+==============================================================================
+ ⚠️  THE FINDING THAT MATTERS MOST: A CONFLICT CAN DISAPPEAR
+==============================================================================
+
+In the normal run, on_time_delivery_rate is the headline risk:
+
+    ## Contested
+    ### on_time_delivery_rate  _[2 sources, conflicting]_  ⚠️ ESCALATE
+    - escalation: high-impact metric is contested across sources
+        - 95.0 percent — supplier_audit (as of 2026-04-10)
+        - 78.0 percent — logistics  (as of 2026-04-05)
+
+In the timeout run it appears here instead:
+
+    ## Well-Established
+    ### on_time_delivery_rate  _[single source only]_
+        - 95.0 percent — supplier_audit (as of 2026-04-10)
+
+    ## Contested
+    _none_
+
+The disagreement did not get resolved. The dissenting source went offline, and the
+surviving value is the SUPPLIER'S OWN SELF-REPORTED 95% — the optimistic one. The
+pessimistic 78% came from our own logistics data. A metric that demanded escalation
+is now filed under 'Well-Established', and the Contested section reads '_none_'.
+
+Graceful degradation is not free. Losing a source does not merely reduce coverage;
+it can convert a KNOWN DISAGREEMENT into FALSE CONFIDENCE, and it does so in the
+reassuring direction. The '[single source only]' tag and the header outage banner
+are the only things standing between this briefing and a reader who concludes
+on-time delivery is fine.
+
+Operational conclusion: source availability is not an infrastructure metric, it is a
+DATA-QUALITY metric. It belongs on the same dashboard as the findings themselves,
+and a metric that was Contested in the last run but is Well-Established in this one
+because a source dropped out deserves an alert of its own.

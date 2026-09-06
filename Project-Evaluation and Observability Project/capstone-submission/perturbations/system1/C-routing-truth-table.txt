@@ -1,0 +1,18 @@
+DETERMINISTIC TRUTH TABLE FOR route_extraction
+confidence threshold = 0.9; low-confidence case sets coverage_limit=0.55
+All three inputs are constructed directly. No API calls, no model variance.
+
+conf<thr  reviewer  integr  -> DECISION       reason
+----------------------------------------------------------------------------------------------------------------------
+False     False     False   -> auto_approve   all confidence at/above threshold, reviewer agrees, integration clean
+False     False     True    -> human_review   integration_failure=['coverage_limit_exceeds_endorsement_sum']
+False     True      False   -> human_review   reviewer_disagreement=['coverage_limit']
+False     True      True    -> human_review   reviewer_disagreement=['coverage_limit']; integration_failure=['coverage_limit_exceeds_endorsement_sum']
+True      False     False   -> human_review   fields_below_threshold=['coverage_limit']
+True      False     True    -> human_review   fields_below_threshold=['coverage_limit']; integration_failure=['coverage_limit_exceeds_endorsement_sum']
+True      True      False   -> human_review   fields_below_threshold=['coverage_limit']; reviewer_disagreement=['coverage_limit']
+True      True      True    -> human_review   fields_below_threshold=['coverage_limit']; reviewer_disagreement=['coverage_limit']; integration_failure=['coverage_limit_exceeds_endorsement_sum']
+
+RULE: the three signals combine with OR, not AND. Any ONE is sufficient to divert to
+human_review; auto_approve requires all three clear at once (row 1). The docstring's
+'(confidence AND reviewer AND integration)' describes what must hold to AUTO-APPROVE.

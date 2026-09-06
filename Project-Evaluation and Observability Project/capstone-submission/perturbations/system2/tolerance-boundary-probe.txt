@@ -1,0 +1,44 @@
+Baseline extraction (replayed from the recorded fixture)
+  components: base=5416.67 bonus=1250.0 commission=2140.0 overtime=385.5 other=450.0
+  calculated_monthly_total = 9642.17
+  stated_monthly_total     = 10892.17  (as printed in the document)
+  DEFAULT_TOLERANCE_USD    = 1.0
+
+Sweeping stated_monthly_total so that delta = calculated - stated takes each value below.
+Only stated_monthly_total is varied; every component is left exactly as extracted.
+
+ target delta       stated   |delta|  consistent?  discrepancy reported
+----------------------------------------------------------------------------------------
+        0.000     9642.170     0.000         True  -
+        0.500     9641.670     0.500         True  -
+        0.990     9641.180     0.990         True  -
+        0.999     9641.171     0.999         True  -
+        1.000     9641.170     1.000         True  -
+        1.001     9641.169     1.001         True  -
+        1.010     9641.160     1.010        False  delta=1.01
+        1.500     9640.670     1.500        False  delta=1.5
+     1250.000     8392.170  1250.000        False  delta=1250.0
+
+PREDICTION BEFORE RUNNING: flags when abs(delta) > 1.0 (strict >), so
+$1.00 exactly passes and anything above it is flagged. The first half held; the second did not.
+
+OBSERVED BOUNDARY:
+  delta = 1.000  -> consistent (as predicted: the comparison is > , not >=)
+  delta = 1.001  -> consistent (NOT predicted)
+  delta = 1.010  -> flagged
+
+WHY 1.001 SURVIVES. Two lines in validator.py act in sequence:
+      delta = round(calculated - stated, 2)      # rounds FIRST
+      if abs(delta) > tolerance:                 # compares SECOND
+A raw delta of 1.001 rounds to 1.00, and 1.00 > 1.00 is False. The effective threshold is
+therefore not $1.00 but $1.005 — the smallest raw delta that rounds up to 1.01. The rounding
+silently widens the documented tolerance by half a cent.
+
+This is harmless at this scale, but it is a real gap between the stated contract
+(DEFAULT_TOLERANCE_USD = 1.00) and the enforced one ($1.005), and it is only visible by
+probing the boundary rather than by reading either line alone.
+
+--- zero-tolerance override (the documented per-call escape hatch) ---
+  delta=0.00 tolerance=0.0 -> consistent=True
+  delta=0.50 tolerance=0.0 -> consistent=False
+  delta=1.00 tolerance=0.0 -> consistent=False

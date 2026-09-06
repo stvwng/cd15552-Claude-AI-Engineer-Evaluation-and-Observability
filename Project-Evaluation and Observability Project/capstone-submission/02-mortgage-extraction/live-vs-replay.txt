@@ -1,0 +1,322 @@
+==============================================================================
+ System 2 — LIVE vs RECORDED extraction: three identical calls, three outcomes
+==============================================================================
+captured: 2026-09-06T00:03:29Z
+document: fixtures/documents/income_sum_mismatch.txt (an ADP paystub:
+          it contains income only — no property, no loan)
+
+Method: the shipped Pipeline and RecordingClient, unmodified. The live client is
+pointed at a throwaway cache dir, so fixtures/recorded_responses/ in the repo is
+never mutated (verified with git status — see the end of this file). The extract
+call is re-issued directly so the RAW tool input can be inspected BEFORE Pydantic
+validation, which is where the interesting failures live.
+
+==============================================================================
+ HEADLINE
+==============================================================================
+Three live calls, same model, same prompt, same document:
+
+  Attempt 1 — emitted FABRICATED objects   -> Pydantic PASSED   (silently wrong)
+  Attempt 2 — omitted absent objects       -> Pydantic PASSED   (correct; matches fixture)
+  Attempt 3 — emitted all-null objects     -> Pydantic REJECTED (caught)
+
+Forced tool_choice did NOT make the output schema-conformant. One call in three
+produced input the schema rejects, and a different one in three produced input the
+schema accepts but that is factually invented. This is the whole argument for
+keeping a validation layer behind tool use.
+
+==============================================================================
+ THE THREE OUTCOMES, SIDE BY SIDE (the property/loan objects)
+==============================================================================
+
+RECORDED FIXTURE (the reference answer):
+    "property": null,
+    "loan": null
+  -> The paystub is silent about property and loan, so both are null. Correct.
+
+ATTEMPT 1 — fabricated (PASSED validation):
+    "loan":     { "amount": 0 },
+    "property": { "address": "<UNKNOWN>", "property_type": "other", ... }
+  -> There is no loan in this document, and "amount": 0 is an invented number that
+     is indistinguishable downstream from a real $0 loan. "<UNKNOWN>" is a
+     placeholder string wearing the type of an address. Both are structurally
+     valid and semantically false. NEITHER the tool schema NOR Pydantic caught this.
+
+ATTEMPT 2 — correct (PASSED validation, byte-identical to the fixture):
+    property and loan keys simply absent from the tool input
+  -> "matches replay exactly: True". This is the behaviour the prompt asks for.
+
+ATTEMPT 3 — all-null object (REJECTED by Pydantic):
+    "loan":     { "amount": null, "term_months": null, ... },
+    "property": { "address": null, "property_type": null, ... }
+  -> Pydantic error:
+       property.address       Input should be a valid string [input_value=None]
+       property.property_type Input should be a valid string [input_value=None]
+       loan.amount            Input should be a valid number [input_value=None]
+  -> The schema permits property to be ABSENT (property: null), but if a property
+     object is present its address and property_type are required non-nullable
+     strings. "I have a property, and I know nothing about it" is not a state the
+     schema allows, and that is deliberate: it collapses to "I have no property."
+
+==============================================================================
+ WHY THIS MATTERS FOR THE TWO-GUARANTEES QUESTION
+==============================================================================
+There are three distinct failure classes visible here, and each layer catches a
+different one:
+
+  malformed shape        -> caught by the tool schema / Pydantic   (attempt 3)
+  arithmetic incoherence -> caught by the consistency validator     (all attempts:
+                            calculated 9642.17 vs stated 10892.17, delta -1250.00)
+  plausible fabrication  -> caught by NEITHER                       (attempt 1)
+
+The third class is why the ROUTING and REVIEW patterns from System 1 exist. No
+amount of schema strictness detects a well-formed lie; only an independent signal
+compared against the source document does.
+
+==============================================================================
+ FULL TRANSCRIPT
+==============================================================================
+Traceback (most recent call last):
+  File "/tmp/live_vs_replay.py", line 51, in <module>
+    m = MortgageExtraction.model_validate(raw)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 3 validation errors for MortgageExtraction
+property.address
+  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]
+    For further information visit https://errors.pydantic.dev/2.13/v/string_type
+property.property_type
+  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]
+    For further information visit https://errors.pydantic.dev/2.13/v/string_type
+loan.amount
+  Input should be a valid number [type=float_type, input_value=None, input_type=NoneType]
+    For further information visit https://errors.pydantic.dev/2.13/v/float_type
+document: income_sum_mismatch.txt
+live attempts: 3
+
+=== REPLAY (recorded fixture) ===
+{
+  "extraction": {
+    "borrower": {
+      "coborrower_name": null,
+      "date_of_birth": null,
+      "email": null,
+      "full_name": "Marcus T. Hollingsworth",
+      "phone": null,
+      "ssn_last4": null
+    },
+    "income": {
+      "base_monthly": 5416.67,
+      "bonus_monthly": 1250.0,
+      "bonus_ytd": null,
+      "commission_monthly": 2140.0,
+      "other_monthly": 450.0,
+      "overtime_monthly": 385.5,
+      "stated_monthly_total": 10892.17
+    },
+    "loan": null,
+    "property": null
+  },
+  "validation": {
+    "consistent": false,
+    "discrepancies": [
+      {
+        "calculated": 9642.17,
+        "delta": -1250.0,
+        "field": "total_monthly_income",
+        "stated": 10892.17
+      }
+    ]
+  }
+}
+
+=== LIVE ATTEMPT 1 (fresh API calls; cache -> /var/folders/84/ywjd5fcx5mq8wptq9l9x8g_r0000gn/T/live-cache-1-ngarl_m4) ===
+classified: income_verification
+tool called: extract_income_verification
+RAW tool input as returned by the model:
+{
+  "borrower": {
+    "coborrower_name": null,
+    "date_of_birth": null,
+    "email": null,
+    "full_name": "Marcus T. Hollingsworth",
+    "phone": null,
+    "ssn_last4": null
+  },
+  "income": {
+    "base_monthly": 5416.67,
+    "bonus_monthly": 1250.0,
+    "commission_monthly": 2140.0,
+    "other_monthly": 450.0,
+    "overtime_monthly": 385.5,
+    "stated_monthly_total": 10892.17
+  },
+  "loan": {
+    "amount": 0
+  },
+  "property": {
+    "address": "<UNKNOWN>",
+    "property_type": "other",
+    "property_type_detail": null
+  }
+}
+pydantic validation: PASSED
+{
+  "extraction": {
+    "borrower": {
+      "coborrower_name": null,
+      "date_of_birth": null,
+      "email": null,
+      "full_name": "Marcus T. Hollingsworth",
+      "phone": null,
+      "ssn_last4": null
+    },
+    "income": {
+      "base_monthly": 5416.67,
+      "bonus_monthly": 1250.0,
+      "bonus_ytd": null,
+      "commission_monthly": 2140.0,
+      "other_monthly": 450.0,
+      "overtime_monthly": 385.5,
+      "stated_monthly_total": 10892.17
+    },
+    "loan": {
+      "amount": 0.0,
+      "interest_rate": null,
+      "loan_program": null,
+      "loan_purpose": null,
+      "loan_purpose_detail": null,
+      "term_months": null
+    },
+    "property": {
+      "address": "<UNKNOWN>",
+      "appraised_value": null,
+      "gross_living_area_sqft": null,
+      "hoa_dues_monthly": null,
+      "occupancy_type": null,
+      "occupancy_type_detail": null,
+      "property_type": "other",
+      "property_type_detail": null,
+      "year_built": null
+    }
+  },
+  "validation": {
+    "consistent": false,
+    "discrepancies": [
+      {
+        "calculated": 9642.17,
+        "delta": -1250.0,
+        "field": "total_monthly_income",
+        "stated": 10892.17
+      }
+    ]
+  }
+}
+matches replay exactly: False
+
+=== LIVE ATTEMPT 2 (fresh API calls; cache -> /var/folders/84/ywjd5fcx5mq8wptq9l9x8g_r0000gn/T/live-cache-2-vm0gqalh) ===
+classified: income_verification
+tool called: extract_income_verification
+RAW tool input as returned by the model:
+{
+  "borrower": {
+    "coborrower_name": null,
+    "date_of_birth": null,
+    "email": null,
+    "full_name": "Marcus T. Hollingsworth",
+    "phone": null,
+    "ssn_last4": null
+  },
+  "income": {
+    "base_monthly": 5416.67,
+    "bonus_monthly": 1250.0,
+    "commission_monthly": 2140.0,
+    "other_monthly": 450.0,
+    "overtime_monthly": 385.5,
+    "stated_monthly_total": 10892.17
+  }
+}
+pydantic validation: PASSED
+{
+  "extraction": {
+    "borrower": {
+      "coborrower_name": null,
+      "date_of_birth": null,
+      "email": null,
+      "full_name": "Marcus T. Hollingsworth",
+      "phone": null,
+      "ssn_last4": null
+    },
+    "income": {
+      "base_monthly": 5416.67,
+      "bonus_monthly": 1250.0,
+      "bonus_ytd": null,
+      "commission_monthly": 2140.0,
+      "other_monthly": 450.0,
+      "overtime_monthly": 385.5,
+      "stated_monthly_total": 10892.17
+    },
+    "loan": null,
+    "property": null
+  },
+  "validation": {
+    "consistent": false,
+    "discrepancies": [
+      {
+        "calculated": 9642.17,
+        "delta": -1250.0,
+        "field": "total_monthly_income",
+        "stated": 10892.17
+      }
+    ]
+  }
+}
+matches replay exactly: True
+
+=== LIVE ATTEMPT 3 (fresh API calls; cache -> /var/folders/84/ywjd5fcx5mq8wptq9l9x8g_r0000gn/T/live-cache-3-xb1wa51l) ===
+classified: income_verification
+tool called: extract_income_verification
+RAW tool input as returned by the model:
+{
+  "borrower": {
+    "coborrower_name": null,
+    "date_of_birth": null,
+    "email": null,
+    "full_name": "Marcus T. Hollingsworth",
+    "phone": null,
+    "ssn_last4": null
+  },
+  "income": {
+    "base_monthly": 5416.67,
+    "bonus_monthly": 1250.0,
+    "commission_monthly": 2140.0,
+    "other_monthly": 450.0,
+    "overtime_monthly": 385.5,
+    "stated_monthly_total": 10892.17
+  },
+  "loan": {
+    "amount": null,
+    "interest_rate": null,
+    "loan_program": null,
+    "loan_purpose": null,
+    "loan_purpose_detail": null,
+    "term_months": null
+  },
+  "property": {
+    "address": null,
+    "appraised_value": null,
+    "gross_living_area_sqft": null,
+    "hoa_dues_monthly": null,
+    "occupancy_type": null,
+    "occupancy_type_detail": null,
+    "property_type": null,
+    "property_type_detail": null,
+    "year_built": null
+  }
+}
+pydantic validation: *** REJECTED ***
+
+==============================================================================
+ REPO FIXTURES UNCHANGED (no recorded response was overwritten)
+==============================================================================
+$ git status --porcelain -- <solution>/fixtures/
+(empty output above = no fixture files modified)

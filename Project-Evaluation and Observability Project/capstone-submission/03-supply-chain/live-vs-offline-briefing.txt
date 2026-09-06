@@ -1,0 +1,157 @@
+==============================================================================
+ System 3 — LIVE news extraction vs RECORDED fixtures
+==============================================================================
+captured: 2026-09-06T00:06:42Z
+$ .venv/bin/supply-chain-investigate meridian              # live  (AnthropicNewsExtractor)
+$ .venv/bin/supply-chain-investigate meridian --offline    # recorded (RecordedNewsExtractor)
+both exit 0
+
+metrics in the recorded briefing:  9
+metrics in the live briefing:     18
+
+==============================================================================
+ WHAT IS STABLE AND WHAT IS NOT
+==============================================================================
+
+STABLE — the Contested section is byte-identical in both runs:
+
+    ### on_time_delivery_rate  _[2 sources, conflicting]_  ⚠️ ESCALATE
+        - 95.0 percent — supplier_audit (as of 2026-04-10)
+        - 78.0 percent — logistics  (as of 2026-04-05)
+
+  This is not luck. That conflict comes from the DETERMINISTIC readers — a JSON
+  audit file and a logistics CSV — which parse the same bytes every time. The
+  headline risk finding of the whole briefing never passes through an LLM.
+
+UNSTABLE — everything the news reader produces. The live run emitted 18 metrics
+  against the recorded run's 9, splitting single findings into finer ones
+  (recall_scope, quality_root_cause_remediation, quality_corrective_action,
+  delivery_delay, delivery_mitigation, logistics_concentration_risk ...). Claim
+  text and metric_id naming differ run to run for the same article.
+
+DESIGN READING: the architecture puts the load-bearing, conflict-detecting work on
+deterministic parsers and uses the LLM only for the unstructured source it cannot
+parse otherwise. The unstable component is confined to the part of the briefing
+where instability is survivable.
+
+==============================================================================
+ ⚠️  FINDING: A REQUIRED DATE FIELD MANUFACTURES DATES
+==============================================================================
+
+The live briefing carries THREE claims dated 2024-01-01:
+
+    > A company identified only as 'Meridian' has drawn down emergency credit
+      lines amid deteriorating cash flow. (industry_news, 2024-01-01)
+    > Meridian has missed payments to subcontractors. (industry_news, 2024-01-01)
+    > Meridian has retained restructuring advisers amid deteriorating cash flow.
+      (industry_news, 2024-01-01)
+
+All three come from data/meridian/news/ambiguous_meridian.txt. That article
+CONTAINS NO DATE AT ALL:
+
+    $ grep -inE 'date|20[0-9]{2}' data/meridian/news/ambiguous_meridian.txt
+    (no matches — the article says 'this quarter' and nothing more)
+
+The recorded fixture for the same article dates those claims 2026-03-09.
+Two runs, two different invented dates, for an article that has none:
+
+    recorded:  (industry_news, 2026-03-09)
+    live:      (industry_news, 2024-01-01)
+
+WHY THE MODEL HAS NO CHOICE. source_date is required and non-nullable in both
+layers of the contract:
+
+    supply_chain_risk/models.py
+        class Claim(BaseModel):
+            source_date: date          # not 'date | None'
+
+    supply_chain_risk/news_extraction.py — tool schema
+        "required": ["claim", "evidence", "source_date", "confidence", ...]
+
+    the system prompt
+        "Each claim carries the article's publication date as source_date"
+        (no instruction for what to do when the article has no date)
+
+The schema demands a date, the prompt assumes one exists, and the model cannot
+return null — so it invents one. 2024-01-01 is a placeholder wearing the type of
+evidence.
+
+==============================================================================
+ WHY THIS IS THE MOST INSTRUCTIVE CROSS-SYSTEM FINDING IN THE PACK
+==============================================================================
+
+System 2 solved exactly this problem and System 3 reintroduces it.
+
+  System 2  Income.bonus_monthly is 'float | None'. The document is silent, the
+            model returns null, and the pipeline records an honest absence.
+            (see 02-mortgage-extraction/missing-field-run.txt)
+
+  System 3  Claim.source_date is 'date'. The article is silent, null is not
+            expressible, and the model fabricates 2024-01-01.
+
+Same organisation, same principle, opposite outcome — decided entirely by whether
+one field was declared nullable. A required field is not a guarantee that the data
+exists; it is a guarantee that SOMETHING will be in that slot. When the underlying
+fact is genuinely unavailable, a non-nullable field does not prevent a gap, it
+CONVERTS THE GAP INTO A FABRICATION and strips the evidence that it was ever a gap.
+
+The consequence is concrete. Section 3c of the brief asks how requiring a date
+stops a time difference from reading as a contradiction. It does — but only for
+claims whose dates are real. A fabricated 2024-01-01 would make genuinely current
+financial-distress reporting look two years stale, and a reader triaging by
+recency would deprioritise it. The guardrail is only as good as the field it
+depends on, and here that field is silently synthetic.
+
+FIX: declare source_date as 'date | None', instruct the prompt to return null when
+the article carries no publication date, and render undated claims as
+'(industry_news, date not stated)'. That is a one-line type change plus one prompt
+sentence, and it converts a silent fabrication into a visible gap.
+
+==============================================================================
+ FULL DIFF  ( '<' = recorded run, '>' = live run )
+==============================================================================
+12a13,15
+> ### customer_supply_disruption  _[single source only]_
+> > The recall disruption forced at least one contract manufacturer to conduct a brief reinspection of incoming inventory before resuming assembly lines. (industry_news, 2026-02-15)
+> 
+17a21,26
+> ### delivery_delay  _[single source only]_
+> > Meridian Components had containers stranded at anchor during the strike, delaying deliveries to multiple customers by an estimated five to nine days. (industry_news, 2026-03-16)
+> 
+> ### delivery_mitigation  _[single source only]_
+> > Meridian Components is activating contingency routing through alternate West Coast terminals and expediting select air freight to mitigate delays. (industry_news, 2026-03-16)
+> 
+19c28
+< > Meridian Components issued a voluntary precautionary recall of a single capacitor-assembly lot in Q1 2026 over potential elevated leakage current under thermal stress. (industry_news, 2026-02-19)
+---
+> > Meridian Components issued a limited voluntary quality advisory/recall for a lot of surface-mount capacitor assemblies that may exhibit elevated leakage current under sustained thermal stress. (industry_news, 2026-02-15)
+32a42,48
+> ### logistics_concentration_risk  _[single source only]_
+> > Meridian Components faces outsized exposure to localized labor actions due to reliance on a single port of entry. (industry_news, 2026-03-16)
+> 
+> ### missed_supplier_payments  _[single source only]_  ⚠️ ESCALATE
+> - escalation: ambiguous supplier identity — request an identifier
+> > Meridian has missed payments to subcontractors. (industry_news, 2024-01-01)
+> 
+34c50
+< > A 72-hour dockworker strike at the Port of Long Beach beginning March 16, 2026 stranded Meridian Components' inbound container shipments, delaying customer deliveries by an estimated five to nine days. (industry_news, 2026-03-17)
+---
+> > Meridian Components' inbound shipments were disrupted by a 72-hour dockworker strike at the Port of Long Beach, its primary port of entry. (industry_news, 2026-03-16)
+35a52,64
+> ### quality_corrective_action  _[single source only]_
+> > Meridian implemented enhanced lot traceability and additional in-line thermal screening to prevent recurrence; no field failures resulted in customer-end product damage. (industry_news, 2026-02-15)
+> 
+> ### quality_root_cause_remediation  _[single source only]_
+> > The affected batch was traced to a drift in a dielectric curing parameter on one production line, which has since been corrected and revalidated. (industry_news, 2026-02-15)
+> 
+> ### recall_scope  _[single source only]_
+> > Fewer than 40,000 units across roughly a dozen customer accounts fell within the affected date code range; Meridian offered free replacement stock and expedited shipping. (industry_news, 2026-02-15)
+> 
+> ### restructuring_advisers_retained  _[single source only]_  ⚠️ ESCALATE
+> - escalation: ambiguous supplier identity — request an identifier
+> > Meridian has retained restructuring advisers amid deteriorating cash flow. (industry_news, 2024-01-01)
+> 
+38c67
+< > A company named 'Meridian' is facing supplier financial distress, having drawn down emergency credit, missed subcontractor payments, and retained restructuring advisers. (industry_news, 2026-03-09)
+---
+> > A company identified only as 'Meridian' has drawn down emergency credit lines amid deteriorating cash flow. (industry_news, 2024-01-01)

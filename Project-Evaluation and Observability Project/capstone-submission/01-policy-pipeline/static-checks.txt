@@ -1,0 +1,15 @@
+=== System 1 (policy-extractor) — static analysis ===
+captured: 2026-09-05T22:21:20Z
+cwd: /Users/stevenwang/cd15552-Claude-AI-Engineer-Evaluation-and-Observability/Build a Validated, Routed Insurance Policy Extraction Pipeline/04-hitl-routing/solution
+
+$ .venv/bin/mypy policy_extractor/
+Success: no issues found in 11 source files
+exit=0
+
+$ .venv/bin/ruff check policy_extractor/ tests/
+All checks passed!
+exit=0
+
+$ .venv/bin/mypy --version ; .venv/bin/ruff --version
+mypy 2.3.1 (compiled: yes)
+ruff 0.16.6
